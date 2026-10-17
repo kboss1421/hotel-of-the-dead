@@ -442,6 +442,7 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
 <script src="lib/examples/js/postprocessing/RenderPass.js"></script>
 <script src="lib/examples/js/postprocessing/ShaderPass.js"></script>
 <script src="lib/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="lib/examples/js/loaders/RGBELoader.js"></script>
 <script src="lib/examples/js/shaders/FXAAShader.js"></script>
 <script src="lib/examples/js/environments/RoomEnvironment.js"></script>
 <script>
@@ -478,7 +479,7 @@ float dNoise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(mix(dHash(i),dHash(i+vec3(1,0,0)),f.x),mix(dHash(i+vec3(0,1,0)),dHash(i+vec3(1,1,0)),f.x),f.y),
              mix(mix(dHash(i+vec3(0,0,1)),dHash(i+vec3(1,0,1)),f.x),mix(dHash(i+vec3(0,1,1)),dHash(i+vec3(1,1,1)),f.x),f.y),f.z);}
 float dFbm(vec3 p){return dNoise(p)*.5+dNoise(p*2.07)*.25+dNoise(p*4.13)*.125+dNoise(p*8.3)*.0625;}`;
-  Std.prototype.onBeforeCompile=function(sh){if(this.transparent||this.userData.noDet)return;
+  Std.prototype.onBeforeCompile=function(sh){if(this.transparent||this.userData.noDet)return;scanPatch(this,sh);
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vDWPos;')
       .replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n{vec4 dw=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\ndw=instanceMatrix*dw;\n#endif\nvDWPos=(modelMatrix*dw).xyz;}');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+DET_NOISE)
@@ -491,8 +492,72 @@ float dFbm(vec3 p){return dNoise(p)*.5+dNoise(p*2.07)*.25+dNoise(p*4.13)*.125+dN
   {float dtFade=clamp(1.-length(vViewPosition)/18.,0.,1.)*dtNear;if(dtFade>0.){float dtH=dFbm(vDWPos*3.)+dNoise(vDWPos*14.)*.12;
     vec3 dtSx=dFdx(-vViewPosition),dtSy=dFdy(-vViewPosition);float dtHx=dFdx(dtH),dtHy=dFdy(dtH);vec3 dtR1=cross(dtSy,normal),dtR2=cross(normal,dtSx);float dtDet=dot(dtSx,dtR1);
     normal=normalize(abs(dtDet)*normal-sign(dtDet)*(dtHx*dtR1+dtHy*dtR2)*.55*dtFade);}}`)};
-  Std.prototype.customProgramCacheKey=function(){return this.transparent||this.userData.noDet?'':'det4'};
+  Std.prototype.customProgramCacheKey=function(){return this.transparent||this.userData.noDet?'':'det4'+(scanKindOf(this)?'s':'')};
 }
+// ================= SCANNED SURFACES (Ultra / Cinematic): CC0 photo-scanned PBR textures from Poly Haven (lib/scan) =================
+// Map boxes and the hotel's tiles get real scanned colour detail, bump (normal) and roughness, projected in world space (triplanar)
+// so it works on the stretched boxes: floors use a ground scan, walls a wall scan. The game's own colours stay as the tint.
+// Files: <id>_a.jpg (albedo, sRGB) and <id>_nr.jpg (normal X/Y in R/G, roughness in B). Means below come from the packing step.
+const SCAN_SETS={coast_sand_01:[3,[.2232,.1702,.1063],.963],sandstone_brick_wall_01:[2.6,[.0704,.0361,.0211],.872],concrete_floor_worn_001:[3,[.0931,.0941,.0889],.541],
+  concrete_wall_003:[3,[.6282,.4938,.3528],.619],concrete_floor_painted:[3,[.085,.0711,.0515],.749],beige_wall_001:[2.5,[.3411,.2623,.1879],.621],red_brick:[1.8,[.2731,.1357,.0819],.923],
+  red_brick_03:[1.8,[.1468,.0898,.073],.532],wood_floor:[2,[.216,.1165,.0548],.472],weathered_brown_planks:[2,[.1181,.072,.0424],.654],metal_plate:[2,[.0479,.0324,.0118],.589],
+  leafy_grass:[3,[.3104,.2289,.1007],.685],mossy_rock:[2.5,[.1542,.1486,.0965],.806],snow_02:[3,[.3782,.3778,.3878],.801],asphalt_01:[3,[.1003,.0799,.0619],.771],
+  dirty_carpet:[2,[.0356,.0284,.0184],.812],decrepit_wallpaper:[1.6,[.1843,.1467,.1116],.927],marble_01:[2,[.4424,.3372,.1938],.506],plastered_wall:[2.5,[.4354,.392,.3345],.912],
+  cobblestone_floor_04:[2.5,[.2648,.2153,.1331],.627]};
+const SCAN_KIND={sand:['coast_sand_01','sandstone_brick_wall_01'],conc:['concrete_floor_worn_001','concrete_wall_003'],light:['concrete_floor_painted','beige_wall_001'],
+  brick:['red_brick','red_brick_03'],wood:['wood_floor','weathered_brown_planks'],metal:['metal_plate','metal_plate'],grass:['leafy_grass','mossy_rock'],snow:['snow_02','plastered_wall'],
+  dark:['asphalt_01','metal_plate'],quartz:['marble_01','marble_01'],stone:['cobblestone_floor_04','mossy_rock'],ceiling:['plastered_wall','plastered_wall'],
+  bed:['dirty_carpet','dirty_carpet'],carpet:['dirty_carpet','decrepit_wallpaper'],wallpaper:['dirty_carpet','decrepit_wallpaper']};
+const SCAN={sets:{},avg:new Map(),on:REALISM&&settings.scan!==false};
+function scanTag(k,t){(t.userData||(t.userData={})).scan=k;return t}
+function scanSet(id){let s=SCAN.sets[id];if(s)return s;const d=SCAN_SETS[id];
+  s=SCAN.sets[id]={on:{value:0},mean:new THREE.Vector3(...d[1]),rough:d[2],scale:d[0],left:2};
+  const L=new THREE.TextureLoader(),fin=t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=ANISO;t.needsUpdate=true;if(--s.left===0)s.on.value=1};
+  s.a=L.load('lib/scan/'+id+'_a.jpg',fin,undefined,()=>console.warn('scan missing',id));s.n=L.load('lib/scan/'+id+'_nr.jpg',fin);return s}
+// average colour of a canvas texture (linear), used as the tint when a scan replaces the hotel's pixel textures
+function scanAvg(t){if(SCAN.avg.has(t))return SCAN.avg.get(t);const c=new THREE.Color(1,1,1);
+  try{const im=t.image,cv=document.createElement('canvas');cv.width=cv.height=8;const g=cv.getContext('2d');g.drawImage(im,0,0,8,8);const d=g.getImageData(0,0,8,8).data;let r=0,gg=0,b=0,n=0;
+    for(let i=0;i<d.length;i+=4){if(d[i+3]<128)continue;r+=d[i];gg+=d[i+1];b+=d[i+2];n++}if(n){c.setRGB(r/n/255,gg/n/255,b/n/255);if(t.encoding===THREE.sRGBEncoding)c.convertSRGBToLinear()}}catch(e){}
+  SCAN.avg.set(t,c);return c}
+// which scan pair fits a material: hotel textures by name, plain coloured map boxes by colour; bright team / flag colours keep their flat look
+function scanKindOf(m){const u=m.userData;if(u._sk!==undefined)return u._sk;let k=null;
+  if(SCAN.on&&u.scan&&!m.transparent&&!(m.metalness>.4)&&!(m.emissive&&m.emissive.getHex()>0x101010)){
+    const mp=m.map;
+    if(mp)k=(mp.userData&&mp.userData.scan)||(mp===TEX.brick?'brick':mp===TEX.wood?'wood':mp===TEX.metal?'metal':mp===TEX.quartz?'quartz':mp===TEX.stone?'stone':mp===TEX.ceiling?'ceiling':mp===TEX.bed?'bed':null);
+    else{const h={};m.color.getHSL(h);const H=h.h*360,S=h.s,L=h.l;
+      if(S>.55&&L>.32)k=null;
+      else if(L<.12)k='dark';
+      else if(S<.12)k=L>.86?(H>180&&H<260?'snow':'light'):L>.55?'light':'conc';
+      else if(H>=70&&H<170)k='grass';
+      else if(H<16||H>=340)k=S>.28?'brick':'conc';
+      else if(H<48)k=L>.52?'sand':S>.22?'wood':'conc';
+      else if(H<70)k=L>.5?'sand':'grass';
+      else k=L>.5?'light':'metal'}}
+  u._sk=k;return k}
+const SCAN_GLSL=`uniform sampler2D scA0,scN0,scA1,scN1;uniform vec3 scM0,scM1,scTint;uniform float scOn0,scOn1,scS0,scS1,scR0,scR1,scMode;
+vec3 scLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(.04045,c));}`;
+const SCAN_COLOR=`float scOn=0.,scFade=1.-smoothstep(35.,80.,length(vViewPosition));vec3 scW=vec3(0.),scWN=vec3(0.,1.,0.);vec4 scNy=vec4(.5,.5,.5,1.),scNx=scNy,scNz=scNy;
+  if(scOn0+scOn1>.5&&scFade>0.){scOn=1.;scWN=normalize(cross(dFdx(vDWPos),dFdy(vDWPos)));vec3 aw=pow(abs(scWN),vec3(4.));scW=aw/(aw.x+aw.y+aw.z+1e-5);
+    float sx=scWN.x<0.?-1.:1.,sz=scWN.z<0.?-1.:1.;vec2 uy=vDWPos.xz*scS0,ux=vec2(vDWPos.z*sx,vDWPos.y)*scS1,uz=vec2(-vDWPos.x*sz,vDWPos.y)*scS1;
+    vec3 ay=mix(vec3(1.),scLin(texture2D(scA0,uy).rgb)/scM0,scOn0),ax=mix(vec3(1.),scLin(texture2D(scA1,ux).rgb)/scM1,scOn1),az=mix(vec3(1.),scLin(texture2D(scA1,uz).rgb)/scM1,scOn1);
+    scNy=texture2D(scN0,uy);scNx=texture2D(scN1,ux);scNz=texture2D(scN1,uz);
+    vec3 a=ay*scW.y+ax*scW.x+az*scW.z;float l=dot(a,vec3(.2126,.7152,.0722));vec3 det=clamp(pow(max(mix(vec3(l),a,.4),vec3(.01)),vec3(1.45)),.2,2.8);
+    vec3 base=scMode>.5?scTint:diffuseColor.rgb;diffuseColor.rgb=mix(diffuseColor.rgb,base*det,scFade);}`;
+const SCAN_ROUGH=`if(scOn>.5){float ry=mix(1.,scNy.b/max(scR0,.05),scOn0),rx=mix(1.,scNx.b/max(scR1,.05),scOn1),rz=mix(1.,scNz.b/max(scR1,.05),scOn1);
+    roughnessFactor=clamp(roughnessFactor*mix(1.,ry*scW.y+rx*scW.x+rz*scW.z,.75*scFade),.08,1.);}`;
+const SCAN_NRM=`if(scOn>.5){vec3 wn=inverseTransformDirection(normal,viewMatrix);float sx=scWN.x<0.?-1.:1.,sz=scWN.z<0.?-1.:1.;
+    vec2 ty=(scNy.rg*2.-1.)*scOn0,tx=(scNx.rg*2.-1.)*scOn1,tz=(scNz.rg*2.-1.)*scOn1;float k=1.35*scFade*(1.-smoothstep(10.,40.,length(vViewPosition)));
+    vec3 nw=normalize(wn+k*(scW.y*vec3(ty.x,0.,-ty.y)+scW.x*vec3(0.,tx.y,tx.x*sx)+scW.z*vec3(-tz.x*sz,tz.y,0.)));normal=normalize((viewMatrix*vec4(nw,0.)).xyz);}`;
+function scanPatch(m,sh){const k=scanKindOf(m);if(!k)return;const[t,s]=SCAN_KIND[k],A=scanSet(t),B=scanSet(s);
+  const tint=m.map?scanAvg(m.map).clone().multiply(m.color):new THREE.Color(1,1,1);
+  Object.assign(sh.uniforms,{scA0:{value:A.a},scN0:{value:A.n},scA1:{value:B.a},scN1:{value:B.n},scM0:{value:A.mean},scM1:{value:B.mean},scOn0:A.on,scOn1:B.on,
+    scS0:{value:1/A.scale},scS1:{value:1/B.scale},scR0:{value:A.rough},scR1:{value:B.rough},scMode:{value:m.map?1:0},scTint:{value:tint}});
+  sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+SCAN_GLSL).replace('#include <color_fragment>',SCAN_COLOR+'\n#include <color_fragment>')
+    .replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n'+SCAN_ROUGH).replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\n'+SCAN_NRM)}
+// photographed sky (HDRI) lights and reflects the outdoor maps in daytime
+function scanSky(pm){if(!SCAN.on||!OPEN||!THREE.RGBELoader)return;
+  new THREE.RGBELoader().load('lib/scan/sky_1k.hdr',t=>{try{const f=scene.fog&&scene.fog.color;if(f&&(f.r*.3+f.g*.59+f.b*.11)<.3){t.dispose();return}
+    const e=pm.fromEquirectangular(t).texture;t.dispose();scene.environment=e;SCAN.sky=e}catch(err){console.warn('sky off',err)}},undefined,()=>console.warn('sky hdr missing'))}
 // soft cloud puffs and a sun glow in place of the solid low-poly clouds
 function realSky(dome){dome.userData.real=1;
   const puff=canvasTex(128,128,g=>{for(let i=0;i<9;i++){const x=34+Math.random()*60,y=44+Math.random()*40,r=22+Math.random()*26,gr=g.createRadialGradient(x,y,0,x,y,r);
@@ -650,7 +715,7 @@ function setupComposer(){
 function sizePost(){const pr=renderer.getPixelRatio();if(fxaaPass)fxaaPass.material.uniforms.resolution.value.set(1/(innerWidth*pr),1/(innerHeight*pr));if(gradePass)gradePass.uniforms.res.value.set(innerWidth*pr,innerHeight*pr);if(ssaoPass)ssaoPass.setSize(innerWidth,innerHeight)}
 // image-based lighting: soft reflections on metal and glossy surfaces
 function setupEnv(){if(!THREE.RoomEnvironment||!THREE.PMREMGenerator)return;try{const pm=new THREE.PMREMGenerator(renderer);const env=pm.fromScene(new THREE.RoomEnvironment(),.04).texture;
-  gunScene.environment=env;if(settings.quality==='ultra'||settings.quality==='cinematic'){scene.environment=env;scene.traverse(o=>{if(o.material&&o.material.isMeshStandardMaterial&&o.material.envMapIntensity===1)o.material.envMapIntensity=.4})}}catch(e){console.warn('env off',e)}}
+  gunScene.environment=env;if(settings.quality==='ultra'||settings.quality==='cinematic'){scene.environment=env;scene.traverse(o=>{if(o.material&&o.material.isMeshStandardMaterial&&o.material.envMapIntensity===1)o.material.envMapIntensity=.4});scanSky(pm)}}catch(e){console.warn('env off',e)}}
 addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);if(composer){composer.setSize(innerWidth,innerHeight);sizePost()}camera.aspect=gunCam.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();gunCam.updateProjectionMatrix()});
 
 scene.add(new THREE.AmbientLight(0x6a6a7a,0.55));
@@ -672,8 +737,8 @@ function canvasTex(w,h,draw,smooth){let c=document.createElement('canvas');c.wid
   return t}
 function px(g,x,y,r,gg,b,a=1){g.fillStyle=`rgba(${r|0},${gg|0},${b|0},${a})`;g.fillRect(x,y,1,1)}
 function noiseFill(g,c,v,n=16){for(let y=0;y<n;y++)for(let x=0;x<n;x++){const k=rnd(-v,v);px(g,x,y,c[0]+k,c[1]+k,c[2]+k)}}
-const carpetTex=c=>canvasTex(16,16,g=>{noiseFill(g,c,10);for(let y=0;y<16;y++)for(let x=0;x<16;x++){if((x+y)%8===0||(x-y+16)%8===0)px(g,x,y,c[0]*.6,c[1]*.6,c[2]*.6);if(((x+y)%8===4)&&((x-y+16)%8===4))px(g,x,y,230,190,90)}});
-const wallpaperTex=c=>canvasTex(16,16,g=>{noiseFill(g,c,6);for(let y=0;y<16;y++)for(let x=0;x<16;x+=4)px(g,x,y,c[0]*.82,c[1]*.82,c[2]*.82);for(const[x,y]of[[2,3],[2,11],[6,7],[10,3],[10,11],[14,7]])px(g,x,y,c[0]*1.15,c[1]*1.15,c[2]*1.1)});
+const carpetTex=c=>scanTag('carpet',canvasTex(16,16,g=>{noiseFill(g,c,10);for(let y=0;y<16;y++)for(let x=0;x<16;x++){if((x+y)%8===0||(x-y+16)%8===0)px(g,x,y,c[0]*.6,c[1]*.6,c[2]*.6);if(((x+y)%8===4)&&((x-y+16)%8===4))px(g,x,y,230,190,90)}}));
+const wallpaperTex=c=>scanTag('wallpaper',canvasTex(16,16,g=>{noiseFill(g,c,6);for(let y=0;y<16;y++)for(let x=0;x<16;x+=4)px(g,x,y,c[0]*.82,c[1]*.82,c[2]*.82);for(const[x,y]of[[2,3],[2,11],[6,7],[10,3],[10,11],[14,7]])px(g,x,y,c[0]*1.15,c[1]*1.15,c[2]*1.1)}));
 const TEX={
   brick:canvasTex(16,16,g=>{noiseFill(g,[145,68,52],18);g.fillStyle='rgb(175,165,155)';for(let r=0;r<4;r++){g.fillRect(0,r*4+3,16,1);const off=r%2?0:4;for(let x=off;x<16;x+=8)g.fillRect(x,r*4,1,3)}}),
   marble:canvasTex(16,16,g=>{for(let y=0;y<16;y++)for(let x=0;x<16;x++){const w=((x>>3)+(y>>3))%2===0;const k=rnd(-8,8);w?px(g,x,y,225+k,222+k,215+k):px(g,x,y,40+k,38+k,45+k)}}),
@@ -693,7 +758,7 @@ const TEX={
   zskin:canvasTex(8,8,g=>noiseFill(g,[78,140,70],14,8)),
 };
 const lam=(c,o)=>new THREE.MeshLambertMaterial(Object.assign({color:c},o||{}));
-const tmat=(t,o)=>new THREE.MeshLambertMaterial(Object.assign({map:t},o||{}));
+const tmat=(t,o)=>new THREE.MeshLambertMaterial(Object.assign({map:t,userData:{scan:1}},o||{}));
 const MAT={ceiling:tmat(TEX.ceiling),brick:tmat(TEX.brick),wood:tmat(TEX.wood),metal:tmat(TEX.metal),quartz:tmat(TEX.quartz),bed:tmat(TEX.bed),stone:tmat(TEX.stone),
   glass:tmat(TEX.glass,{transparent:true}),lamp:new THREE.MeshBasicMaterial({map:TEX.lamp}),
   web:new THREE.MeshBasicMaterial({map:TEX.web,transparent:true,alphaTest:.4,side:THREE.DoubleSide}),
@@ -2167,16 +2232,16 @@ function makeAO(cmp){if(settings.ao===false||!THREE.DepthTexture||!THREE.ShaderP
   const st=document.createElement('style');st.textContent='.gpFocus{outline:3px solid #f2c14e!important;outline-offset:2px;box-shadow:0 0 12px rgba(242,193,78,.7)!important}';document.head.appendChild(st);
   const box=$('sVoice');if(box){const w=document.createElement('div');const B='class="btn" style="font-size:10px;padding:8px 12px"';
     w.innerHTML=`<div class="row">Target frame rate <button ${B} id="fpsBtn"></button></div><div class="row">Show FPS <button ${B} id="fpsShowBtn"></button></div>
-      <div class="row">Ambient occlusion <button ${B} id="aoBtn"></button></div>
+      <div class="row">Ambient occlusion <button ${B} id="aoBtn"></button></div><div class="row">Scanned textures &amp; real sky <button ${B} id="scanBtn"></button></div>
       <div class="row">Controller look speed <input type="range" id="sGp" min="0.3" max="3" step="0.05"></div>
       <div class="row">Controller invert look <button ${B} id="gpInvBtn"></button></div><div class="row">Controller vibration <button ${B} id="gpRumBtn"></button></div>`;
     box.parentNode.insertBefore(w,box);
     const FT=['auto',120,144,60,0],ftName=v=>v==='auto'?'AUTO ('+PERF.hz+' HZ DISPLAY)':v?v+' FPS':'OFF (FIXED RESOLUTION)';
     const paint=()=>{const ft=settings.fpsTarget==null?'auto':settings.fpsTarget;$('fpsBtn').textContent=ftName(ft);$('fpsShowBtn').textContent=settings.showFps?'ON':'OFF';
-      $('aoBtn').textContent=settings.ao===false?'OFF':(REALISM?'ON':'ON (ULTRA / CINEMATIC ONLY)');$('gpInvBtn').textContent=settings.gpInvert?'ON':'OFF';$('gpRumBtn').textContent=settings.gpRumble===false?'OFF':'ON';$('sGp').value=settings.gpSens||1};
+      $('aoBtn').textContent=settings.ao===false?'OFF':(REALISM?'ON':'ON (ULTRA / CINEMATIC ONLY)');$('scanBtn').textContent=settings.scan===false?'OFF':(REALISM?'ON':'ON (ULTRA / CINEMATIC ONLY)');$('gpInvBtn').textContent=settings.gpInvert?'ON':'OFF';$('gpRumBtn').textContent=settings.gpRumble===false?'OFF':'ON';$('sGp').value=settings.gpSens||1};
     $('fpsBtn').onclick=()=>{const ft=settings.fpsTarget==null?'auto':settings.fpsTarget;settings.fpsTarget=FT[(FT.indexOf(ft)+1)%FT.length];saveSettings();paint()};
     $('fpsShowBtn').onclick=()=>{settings.showFps=!settings.showFps;saveSettings();paint()};
-    $('aoBtn').onclick=()=>{settings.ao=settings.ao===false;saveSettings();paint();toast('Ambient occlusion changes after a restart / reload')};
+    $('scanBtn').onclick=()=>{settings.scan=settings.scan===false;saveSettings();paint();toast('Scanned textures change after a restart / reload')};$('aoBtn').onclick=()=>{settings.ao=settings.ao===false;saveSettings();paint();toast('Ambient occlusion changes after a restart / reload')};
     $('gpInvBtn').onclick=()=>{settings.gpInvert=!settings.gpInvert;saveSettings();paint()};$('gpRumBtn').onclick=()=>{settings.gpRumble=settings.gpRumble===false;saveSettings();paint()};
     $('sGp').oninput=()=>{settings.gpSens=+$('sGp').value;saveSettings()};paint();setInterval(()=>{if(!$('menuSet').classList.contains('hidden'))$('fpsBtn').textContent=ftName(settings.fpsTarget==null?'auto':settings.fpsTarget)},2000)}}
 // ================= game flow =================
@@ -2295,7 +2360,7 @@ function buildRoyale(){
   const g=new Uint8Array(W*D);grid.push(g);
   const grp=new THREE.Group();scene.add(grp);floorGroups.push(grp);
   const S=surf(0);
-  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),roughness:.85,metalness:0}));
+  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),userData:{scan:1},roughness:.85,metalness:0}));
   const M=c=>typeof c==='number'?LP(c):c;
   const mark=(x0,z0,x1,z1,t)=>{for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)if(x>=0&&z>=0&&x<W&&z<D)g[x+z*W]=t};
   const box=(x0,z0,x1,z1,y0,h,c)=>{const m=new THREE.Mesh(BEVG(x1-x0+1,h,z1-z0+1),M(c));m.scale.set(x1-x0+1,h,z1-z0+1);m.position.set((x0+x1+1)/2,S+y0+h/2,(z0+z1+1)/2);grp.add(m);return m};
@@ -2459,7 +2524,7 @@ function buildFrost(){
   const g=new Uint8Array(W*D);grid.push(g);
   const grp=new THREE.Group();scene.add(grp);floorGroups.push(grp);
   const S=surf(0);
-  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),roughness:.92,metalness:0}));
+  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),userData:{scan:1},roughness:.92,metalness:0}));
   const M=c=>typeof c==='number'?LP(c):c;
   const mark=(x0,z0,x1,z1,t)=>{for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)if(x>=0&&z>=0&&x<W&&z<D)g[x+z*W]=t};
   const box=(x0,z0,x1,z1,y0,h,c)=>{const m=new THREE.Mesh(BEVG(x1-x0+1,h,z1-z0+1),M(c));m.scale.set(x1-x0+1,h,z1-z0+1);m.position.set((x0+x1+1)/2,S+y0+h/2,(z0+z1+1)/2);grp.add(m);return m};
@@ -2633,7 +2698,7 @@ const ITEM_DEFS_GEN={
     {f:0,kind:'pap',x:46,z:49,face:'W'},{f:0,kind:'mod',x:46,z:45,face:'W'},{f:0,kind:'perk',perk:'swift',x:26,z:50,face:'E'},{f:0,kind:'perk',perk:'phoenix',x:27,z:41,face:'S'}]};
 // the shared open-map kit, bound to one grid and one scene group
 function mkKit(C,g,grp,S){
-  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),roughness:.92,metalness:0}));
+  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),userData:{scan:1},roughness:.92,metalness:0}));
   const M=c=>typeof c==='number'?LP(c):c;
   const glow=(c,e)=>new THREE.MeshStandardMaterial({color:c,emissive:e==null?c:e,emissiveIntensity:1,flatShading:!SMOOTH()});
   const mark=(x0,z0,x1,z1,t)=>{for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)if(x>=0&&z>=0&&x<W&&z<D)g[x+z*W]=t};
@@ -3037,7 +3102,7 @@ function mapItemDefs(){return ITEM_DEFS_GEN[MAP]||(MAP==='skyline'?ITEM_DEFS_SKY
 function reachSet(g,st){const walk=v=>v===0||v===T.BARRIER||(WADE&&v===T.WATER);const seen=new Uint8Array(W*D);const q=[Math.floor(st[0])+Math.floor(st[1])*W];seen[q[0]]=1;
   for(let h=0;h<q.length;h++){const c=q[h],cx=c%W,cz=(c/W)|0;for(const[dx,dz]of N4){const nx=cx+dx,nz=cz+dz;if(nx<0||nz<0||nx>=W||nz>=D)continue;const n=nx+nz*W;if(seen[n]||!walk(g[n]))continue;seen[n]=1;q.push(n)}}return seen}
 function expandMap(){const st=EXPAND[MAP];if(!st)return;const g=grid[0],grp=floorGroups[0],S=surf(0),rnd2=seededRand('hotd-'+MAP);
-  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),roughness:.9}));const tk=makeTownKit(grp,g,S,LP);
+  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),userData:{scan:1},roughness:.9}));const tk=makeTownKit(grp,g,S,LP);
   const bad=new Uint8Array(W*D);const ban=(x,z,r)=>{for(let a=x-r;a<=x+r;a++)for(let b=z-r;b<=z+r;b++)if(a>=0&&b>=0&&a<W&&b<D)bad[a+b*W]=1};
   for(const d of mapItemDefs()){const f=FACE[d.face];ban(d.x,d.z,1);ban(d.x+f.dx,d.z+f.dz,1);if(d.rect)for(let x=d.rect[0];x<=d.rect[2];x++)for(let z=d.rect[1];z<=d.rect[3];z++)ban(x,z,0)}
   for(const zn of ZONES){for(const[x,z]of zn.cells)ban(x,z,2);const r=zn.rect;for(let x=r[0];x<=r[2];x++)for(let z=r[1];z<=r[3];z++)ban(x,z,0)}
@@ -3480,7 +3545,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.17.1631';
+const GAME_VERSION=/*VER*/'2026.10.17.1645';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -4916,7 +4981,7 @@ function buildSkyline(){
   const g=new Uint8Array(W*D).fill(T.VOID);grid.push(g);
   const grp=new THREE.Group();scene.add(grp);floorGroups.push(grp);
   const S=surf(0),DROP=46;
-  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),roughness:.7,metalness:.1}));
+  const LPc={};const LP=c=>LPc[c]||(LPc[c]=new THREE.MeshStandardMaterial({color:c,flatShading:!SMOOTH(),userData:{scan:1},roughness:.7,metalness:.1}));
   const M=c=>typeof c==='number'?LP(c):c;
   const mark=(x0,z0,x1,z1,t)=>{for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)if(x>=0&&z>=0&&x<W&&z<D)g[x+z*W]=t};
   const H=(x0,z0,x1,z1,h)=>{for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)setH(0,x,z,h)};
