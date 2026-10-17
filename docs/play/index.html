@@ -1132,7 +1132,7 @@ function buildGun(id,pap,arms,att,camo){
     B(.01,ln-tp+.004,.012,GM.dark,-.013,(tp-.004+ln)/2,.02);B(.01,ln-tp+.004,.012,GM.dark,.013,(tp-.004+ln)/2,.02);B(.008,ln-tp+.006,.01,GM.dark,0,(tp-.006+ln)/2,muzzle+.06)}
   {const P0=g.children.filter(m=>m.isMesh);muzzle=realGun(g,id,att,muzzle,B,P0);if(REALISM){shapeGun(id,P0);gunDetail(g,id,att,B,P0);mergeGun(g)}}
   if(arms){
-    const fa=B(.1,.1,.5,GM.skin,.03,-.2,.24,.55),sl=B(.12,.12,.2,GM.sleeve,.03,-.3,.46,.55),fb=two?B(.1,.1,.5,GM.skin,-.1,-.17,-.12,.45):null;if(fb)fb.rotation.y=-.5;
+    const fa=B(.1,.1,.5,GM.skin,.03,-.2,.24,.55),sl=B(.12,.12,.2,GM.sleeve,.03,-.3,.46,.55),fb=two?B(.1,.1,.5,GM.skin,-.1,-.17,-.12,.45):null;if(fb)fb.rotation.y=-.5;for(const a of[fa,sl,fb])if(a)a.userData.arm=1;
     // long sleeves in the field uniform (the cuff a shade darker) and gloves, as a modern soldier wears them
     if(REALISM){if(!RL_VM.sleeve){RL_VM.sleeve=new THREE.MeshStandardMaterial({map:RL.uni(RL.uniKind()),color:0x8f8b76,roughness:.9});RL_VM.cuff=new THREE.MeshStandardMaterial({map:RL.uni(RL.uniKind()),color:0x6f6b5a,roughness:.9})}
       for(const a of[fa,sl,fb])if(a){a.geometry=RL_VM.arm;a.material=a===sl?RL_VM.cuff:RL_VM.sleeve;if(a!==sl)a.add(new THREE.Mesh(RL_VM.glove,RL_VM.gloveMat))}}
@@ -3705,7 +3705,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.17.1732';
+const GAME_VERSION=/*VER*/'2026.10.17.1745';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -5737,8 +5737,15 @@ function makeKeychain(id){const o=new THREE.Group(),M=(c,r=.5,m=.2)=>new THREE.M
     case'radiation':{A(new THREE.CylinderGeometry(.2,.2,.03,SG(16)),M(0xe8d020,.4,.1)).rotation.x=Math.PI/2;const blk=M(0x111111);for(let k=0;k<3;k++){const s=new THREE.Shape();s.moveTo(0,0);s.absarc(0,0,.17,k*2.09-.5,k*2.09+.5,false);s.closePath();A(new THREE.ShapeGeometry(s),blk,0,0,.02)}A(new THREE.CircleGeometry(.04,SG(8)),blk,0,0,.025);break}
     case'mic':A(new THREE.CylinderGeometry(.05,.035,.3,SG(8)),M(0x1a1a1a,.4,.3),0,-.05,0);A(sph(.09),M(0x8a8a8a,.6,.7),0,.15,0);break}
   return o}
+const _kcB=new THREE.Box3();
 function attachKeychain(gun,id){if(!id||!KEYCHAINS[id])return;const rec=gun.children[0];if(!rec)return;const k=makeKeychain(id);k.scale.setScalar(.075);
-  k.position.set(rec.position.x+rec.scale.x/2+.01,rec.position.y-.005,rec.position.z+Math.min(.12,rec.scale.z*.3));gun.add(k);gun.userData.kc=k;return k}
+  // hang it off the left side, toward the front of the receiver: the side (and end) the player and the Gunsmith camera actually see
+  k.position.set(rec.position.x-rec.scale.x/2-.012,rec.position.y+rec.scale.y*.1,rec.position.z-rec.scale.z*.42);
+  {const kz=k.position.z,ky=k.position.y;let mx=rec.position.x-rec.scale.x/2;   // clear any part wider than the receiver there (mag well, feed cover)
+   for(const c of gun.children){if(!c.isMesh||!c.geometry||c.userData.arm)continue;if(!c.geometry.boundingBox)c.geometry.computeBoundingBox();c.updateMatrix();_kcB.copy(c.geometry.boundingBox).applyMatrix4(c.matrix);
+     if(_kcB.max.z<kz-.02||_kcB.min.z>kz+.02||_kcB.max.y<ky-.05||_kcB.min.y>ky+.01)continue;if(_kcB.min.x<mx)mx=_kcB.min.x}
+   k.position.x=mx-.012}
+  gun.add(k);gun.userData.kc=k;return k}
 // ---- emotes
 const EMOTES={
   wave:{name:'Wave',price:0,dur:2.4},salute:{name:'Salute',price:0,dur:2.4},clap:{name:'Slow Clap',price:150,dur:3},facepalm:{name:'Facepalm',price:150,dur:2.6},
