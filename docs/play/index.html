@@ -3135,7 +3135,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.17.0203';
+const GAME_VERSION=/*VER*/'2026.10.17.0205';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:6}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}

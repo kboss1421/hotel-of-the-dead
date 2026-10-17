@@ -78,9 +78,10 @@ footer{padding:30px 0 50px;color:#6a5e74;font-size:13px;text-align:center}
 // owner/repo come from the address: https://OWNER.github.io/REPO/
 const owner=location.hostname.split('.')[0],repo=location.pathname.split('/').filter(Boolean)[0]||'';
 document.getElementById('dlWin').href=repo?`https://github.com/${owner}/${repo}/releases/latest/download/HotelOfTheDead-Desktop.zip`:'#';
+let dlSet=false;
 fetch('version.json',{cache:'no-store'}).then(r=>r.json()).then(v=>{
   document.getElementById('ver').innerHTML='Latest version: <b>'+v.version+'</b>'+(v.date?' &middot; '+new Date(v.date).toLocaleDateString():'');
-  document.getElementById('notes').textContent=v.notes||'Bug fixes and improvements.';document.getElementById('foot').textContent='version '+v.version;
+  document.getElementById('notes').textContent=v.notes||'Bug fixes and improvements.';if(v.desktop)document.getElementById('dlWin').href=v.desktop;document.getElementById('foot').textContent='version '+v.version;
 }).catch(()=>{document.getElementById('notes').textContent='Could not load the update notes.'});
 </script>
 </body>
