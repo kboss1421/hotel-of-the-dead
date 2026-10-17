@@ -1,0 +1,10 @@
+# Render "Blueprint": New > Blueprint, pick this repository, and Render sets up the hub for you.
+services:
+  - type: web
+    name: hotd-hub
+    runtime: node
+    rootDir: cloud
+    buildCommand: echo "no build needed"
+    startCommand: node hub.js
+    plan: free
+    healthCheckPath: /health

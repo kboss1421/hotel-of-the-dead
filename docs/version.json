@@ -1,0 +1,19 @@
+{
+ "version": "2026.10.17.0158",
+ "date": "2026-10-17T01:58:12",
+ "notes": "Big update!\n- Bigger maps, plus two new ones: Farmstead and Downtown\n- Play on phones and tablets (touch controls)\n- 10 new guns incl. the Kar98k, new grenades and tacticals, sniper scopes\n- 7 new scorestreaks, up to the Tactical Nuke\n- Emotes, tracer rounds, keychains, new camos, codes, achievement rewards\n- Parties, matchmaking, private matches and voice chat\n- More realistic soldiers, zombies, guns and furniture",
+ "files": [
+  "index.html",
+  "lib/PressStart2P.woff2",
+  "lib/three.min.js",
+  "lib/examples/js/environments/RoomEnvironment.js",
+  "lib/examples/js/postprocessing/EffectComposer.js",
+  "lib/examples/js/postprocessing/RenderPass.js",
+  "lib/examples/js/postprocessing/ShaderPass.js",
+  "lib/examples/js/postprocessing/UnrealBloomPass.js",
+  "lib/examples/js/shaders/CopyShader.js",
+  "lib/examples/js/shaders/FXAAShader.js",
+  "lib/examples/js/shaders/GammaCorrectionShader.js",
+  "lib/examples/js/shaders/LuminosityHighPassShader.js"
+ ]
+}

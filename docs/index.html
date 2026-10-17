@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hotel of the Dead</title>
+<meta name="description" content="Hotel of the Dead: a free zombies and multiplayer FPS. Play in your browser or download it for Windows.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0910;--panel:#16111c;--line:#2a2030;--red:#c8202a;--red2:#8a1418;--gold:#f2c14e;--text:#ece6f0;--dim:#a89cb4}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;line-height:1.55}
+a{color:var(--gold)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+header{position:relative;overflow:hidden;border-bottom:3px solid #000;background:radial-gradient(ellipse at 50% -10%,#3a0d14 0%,#0b0910 70%)}
+header .wrap{padding:72px 20px 56px;text-align:center}
+.logo{font-family:'Press Start 2P',monospace;font-size:clamp(26px,6vw,54px);color:var(--red);text-shadow:4px 4px 0 #300;margin:0;letter-spacing:2px}
+.logo small{display:block;font-size:.32em;color:#fff;margin-top:14px;letter-spacing:4px;text-shadow:2px 2px 0 #000}
+.tag{color:var(--dim);max-width:620px;margin:22px auto 30px;font-size:17px}
+.btns{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.btn{font-family:'Press Start 2P',monospace;font-size:13px;padding:18px 22px;border:3px solid #000;box-shadow:0 0 0 2px #3a2a1a,4px 4px 0 #000;text-decoration:none;color:#fff;background:#2a2030;display:inline-flex;flex-direction:column;align-items:center;gap:8px;min-width:250px}
+.btn small{font-family:Inter,sans-serif;font-size:12px;color:#d8cce0}
+.btn.red{background:var(--red2)}.btn:hover{transform:translate(-1px,-1px);box-shadow:0 0 0 2px var(--gold),5px 5px 0 #000}
+.ver{display:inline-block;margin-top:22px;font-size:13px;color:var(--dim)}.ver b{color:var(--gold)}
+.drip{position:absolute;top:0;width:10px;background:var(--red2);border-radius:0 0 6px 6px;opacity:.6}
+section{padding:46px 0;border-bottom:1px solid var(--line)}
+h2{font-family:'Press Start 2P',monospace;font-size:16px;color:var(--gold);margin:0 0 20px;letter-spacing:1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{background:var(--panel);border:3px solid #000;box-shadow:inset 0 0 0 2px var(--line);padding:18px}
+.card b{display:block;margin-bottom:6px;color:#fff}.card p{margin:0;color:var(--dim);font-size:14px}
+ol{padding-left:22px;color:var(--dim)}ol li{margin:8px 0}ol b{color:#fff}
+.news{background:var(--panel);border-left:4px solid var(--red);padding:14px 18px;white-space:pre-wrap;color:var(--dim);font-size:14px}
+footer{padding:30px 0 50px;color:#6a5e74;font-size:13px;text-align:center}
+@media(max-width:560px){.btn{min-width:0;width:100%}header .wrap{padding:52px 16px 40px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="drip" style="left:8%;height:46px"></div><div class="drip" style="left:23%;height:24px"></div><div class="drip" style="left:61%;height:58px"></div><div class="drip" style="left:84%;height:30px"></div>
+  <div class="wrap">
+    <h1 class="logo">HOTEL<small>OF THE DEAD</small></h1>
+    <p class="tag">A free first-person shooter: survive the undead in Zombies, fight bots in Multiplayer, or team up online with parties, matchmaking and private matches.</p>
+    <div class="btns">
+      <a class="btn red" href="play/">PLAY IN BROWSER<small>Instant. Works on phones and tablets too.</small></a>
+      <a class="btn" id="dlWin" href="#">DOWNLOAD FOR WINDOWS<small>Desktop app: voice chat, hosting, offline play</small></a>
+    </div>
+    <div class="ver" id="ver">Latest version: <b>...</b></div>
+  </div>
+</header>
+<main class="wrap">
+  <section>
+    <h2>WHAT'S NEW</h2>
+    <div class="news" id="notes">Loading...</div>
+    <p style="color:var(--dim);font-size:14px">You never need to download the game again: the desktop app updates itself when it starts, and the browser version is always the newest.</p>
+  </section>
+  <section>
+    <h2>INSTALL ON WINDOWS</h2>
+    <ol>
+      <li>Click <b>Download for Windows</b> and save the zip (about 115 MB).</li>
+      <li>Right-click the zip, choose <b>Extract All</b>, then open the folder.</li>
+      <li>Double-click <b>Install.bat</b>. It adds Hotel of the Dead to your Start menu and desktop.</li>
+      <li>If Windows shows "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b> (the app is not code-signed).</li>
+    </ol>
+  </section>
+  <section>
+    <h2>FEATURES</h2>
+    <div class="grid">
+      <div class="card"><b>Zombies</b><p>Round-based survival on 12 maps, with perks, the Mystery Box, Pack-a-Punch and a boss to kill.</p></div>
+      <div class="card"><b>Multiplayer</b><p>Team Deathmatch and Free-for-all against bots, with a dozen scorestreaks up to the Tactical Nuke.</p></div>
+      <div class="card"><b>Play together</b><p>Make a party, invite friends by code, find a match with whoever is online, or start a private match.</p></div>
+      <div class="card"><b>Real guns</b><p>35+ weapons modelled on real-world data, a Gunsmith with 9 attachment slots, and sniper optics.</p></div>
+      <div class="card"><b>Look the part</b><p>Skins, emotes, camos, tracer rounds and keychains from the shop, the event and achievements.</p></div>
+      <div class="card"><b>Voice chat</b><p>Talk to your team: open mic, or hold T to talk.</p></div>
+    </div>
+  </section>
+</main>
+<footer>Hotel of the Dead &middot; made with three.js &middot; <span id="foot"></span></footer>
+<script>
+// owner/repo come from the address: https://OWNER.github.io/REPO/
+const owner=location.hostname.split('.')[0],repo=location.pathname.split('/').filter(Boolean)[0]||'';
+document.getElementById('dlWin').href=repo?`https://github.com/${owner}/${repo}/releases/latest/download/HotelOfTheDead-Desktop.zip`:'#';
+fetch('version.json',{cache:'no-store'}).then(r=>r.json()).then(v=>{
+  document.getElementById('ver').innerHTML='Latest version: <b>'+v.version+'</b>'+(v.date?' &middot; '+new Date(v.date).toLocaleDateString():'');
+  document.getElementById('notes').textContent=v.notes||'Bug fixes and improvements.';document.getElementById('foot').textContent='version '+v.version;
+}).catch(()=>{document.getElementById('notes').textContent='Could not load the update notes.'});
+</script>
+</body>
+</html>

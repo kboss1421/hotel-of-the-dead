@@ -1,0 +1,10 @@
+{
+  "name": "hotd-hub",
+  "version": "1.0.0",
+  "description": "Hotel of the Dead online hub: parties, matchmaking, private matches",
+  "main": "hub.js",
+  "scripts": { "start": "node hub.js" },
+  "engines": { "node": ">=18" },
+  "license": "UNLICENSED",
+  "private": true
+}
