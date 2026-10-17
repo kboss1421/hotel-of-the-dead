@@ -372,6 +372,7 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
         <li><kbd>6</kbd> <kbd>7</kbd> <kbd>8</kbd> <kbd>9</kbd> play cards (costs elixir)</li>
         <li><kbd>B</kbd> emote wheel (then 1-4)</li>
         <li><kbd>T</kbd> hold to talk in online matches (change it in Settings)</li>
+        <li><b>Controller</b> (Xbox / PlayStation): left stick move, click it to sprint, right stick look, <kbd>RT</kbd> fire, <kbd>LT</kbd> aim, <kbd>A</kbd> jump, <kbd>B</kbd> crouch / slide, <kbd>X</kbd> reload (hold to use, buy, plant), <kbd>Y</kbd> swap, <kbd>RB</kbd> lethal, <kbd>LB</kbd> tactical, click right stick to knife, D-pad scorestreaks, <kbd>View</kbd> scoreboard, <kbd>Menu</kbd> pause. In menus: D-pad moves, <kbd>A</kbd> selects, <kbd>B</kbd> back</li>
         <li><kbd>Esc</kbd> menu: Return, Settings, Leave game (or Close game on the main menu)</li>
       </ul>
       <button class="btn" data-go="Set">BACK</button>
@@ -639,7 +640,7 @@ const GradeShader={uniforms:{tDiffuse:{value:null},time:{value:0},res:{value:new
 function setupComposer(){
   const q=settings.quality;if((q!=='ultra'&&q!=='cinematic')||!THREE.EffectComposer)return;
   try{composer=new THREE.EffectComposer(renderer);composer.setPixelRatio(renderer.getPixelRatio());composer.setSize(innerWidth,innerHeight);
-    composer.addPass(new THREE.RenderPass(scene,camera));
+    composer.addPass(new THREE.RenderPass(scene,camera));if(REALISM){ssaoPass=makeAO(composer);if(ssaoPass)composer.addPass(ssaoPass)}
     gunPass=new THREE.RenderPass(gunScene,gunCam);gunPass.clear=false;gunPass.clearDepth=true;composer.addPass(gunPass);
     if(THREE.UnrealBloomPass)composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.42,.4,.9));
     gradePass=new THREE.ShaderPass(GradeShader);composer.addPass(gradePass);
@@ -1960,7 +1961,7 @@ function updatePlayer(dt){
   if(travel){P.vx=P.vz=0;P.y=cabinY;camUpdate(dt);return}
   let fx=0,fz=0;const fw=[-Math.sin(P.yaw),-Math.cos(P.yaw)],rt=[Math.cos(P.yaw),-Math.sin(P.yaw)];
   if(keys.KeyW){fx+=fw[0];fz+=fw[1]}if(keys.KeyS){fx-=fw[0];fz-=fw[1]}if(keys.KeyD){fx+=rt[0];fz+=rt[1]}if(keys.KeyA){fx-=rt[0];fz-=rt[1]}
-  const l=Math.hypot(fx,fz);if(l>0){fx/=l;fz/=l}
+  const l=Math.hypot(fx,fz);if(l>0){fx/=l;fz/=l}if(GP.on&&(GP.mx||GP.my)&&!P.menuOpen&&!(P.stunUntil>now)){fx=fw[0]*-GP.my+rt[0]*GP.mx;fz=fw[1]*-GP.my+rt[1]*GP.mx}
   updateCrouch(dt);updateLean(dt);
   const sprint=keys.ShiftLeft&&keys.KeyW&&!P.ads&&P.reloadT<=0&&!P.crouched;
   let spd=(sprint?6.4*(hasWZ('double')?1.12:1):4.3)*(P.perks.has('swift')?1.2:1)*(P.slowUntil>now?.45:1)*(P.ads?.6:1)*(P.crouched?(hasWZ('double')?.7:.52):1)*(hasWZ('resolute')&&now-P.lastHit<2?1.2:1)*(P.leanK?1-.2*Math.abs(P.leanK):1);
@@ -2041,7 +2042,7 @@ function update(dt){
 let last=performance.now();
 function frame(t){
   requestAnimationFrame(frame);
-  const dt=Math.min(.05,(t-last)/1000);last=t;
+  const fms=t-last;const dt=Math.min(.05,fms/1000);last=t;try{gpPoll(dt);perfFrame(fms)}catch(e){console.error(e)}
   try{
     if(state==='play')update(dt);else if(state==='title'){updateLobby(dt);updateParticles(dt)}
     if(state!=='title'){updateViewModel(dt);updateHUD(dt)}
@@ -2054,6 +2055,130 @@ function frame(t){
   else{renderer.clear();renderer.render(scene,camera);if(showGun){renderer.clearDepth();renderer.render(gunScene,gunCam)}}
 }
 
+// ================= CONTROLLER (Xbox / PlayStation / any standard gamepad) =================
+// Left stick move (L3 sprint), right stick look, RT fire, LT aim, A jump, B crouch / slide, X reload (hold to use / plant / buy),
+// Y swap, RB lethal, LB tactical, R3 knife, D-pad scorestreaks (zombies: up shock blast, others cards), View scoreboard, Menu pause.
+// In menus the D-pad / left stick moves a highlight, A presses, B goes back, LB / RB or the right stick scroll.
+const GP={on:false,prev:[],mx:0,my:0,sprint:false,k:{},navT:0,focus:null,lastShot:-9,hurt:0,id:''};
+const GP_DZ=.17;
+function gpAxis(x,y){const l=Math.hypot(x,y);if(l<GP_DZ)return[0,0];const m=Math.min(1,(l-GP_DZ)/(1-GP_DZ));return[x/l*m,y/l*m]}
+function gpKey(code,v){if(GP.k[code]!==v){GP.k[code]=v;keys[code]=v}}
+function gpRumble(g,ms,s,w){if(settings.gpRumble===false)return;try{const a=g.vibrationActuator;if(a&&a.playEffect)a.playEffect('dual-rumble',{duration:ms,strongMagnitude:s,weakMagnitude:w})}catch(e){}}
+addEventListener('gamepadconnected',e=>{toast('Controller connected');GP.id=e.gamepad&&e.gamepad.id||''});
+addEventListener('gamepaddisconnected',()=>{toast('Controller disconnected');for(const c in GP.k)gpKey(c,false);GP.mx=GP.my=0;GP.on=false;P.trigger=false});
+function gpPad(){const ps=navigator.getGamepads?navigator.getGamepads():[];for(const p of ps)if(p&&p.connected&&p.buttons&&p.buttons.length>=12)return p;return null}
+function gpPoll(dt){const g=gpPad();if(!g){if(GP.on){for(const c in GP.k)gpKey(c,false);GP.mx=GP.my=0;GP.on=false}return}
+  const cur=[];for(let i=0;i<17;i++){const b=g.buttons[i];cur[i]=!!(b&&(b.pressed||b.value>.45))}
+  const hit=i=>cur[i]&&!GP.prev[i],up=i=>!cur[i]&&GP.prev[i];
+  const[lx,ly]=gpAxis(g.axes[0]||0,g.axes[1]||0),[rx,ry]=gpAxis(g.axes[2]||0,g.axes[3]||0);
+  const lt=g.buttons[6]?g.buttons[6].value:0,rt=g.buttons[7]?g.buttons[7].value:0;
+  if(cur.some(Boolean)||lx||ly||rx||ry)GP.on=true;
+  const playing=state==='play'&&!P.menuOpen&&$('over').classList.contains('hidden');
+  if(playing&&!P.mpDead){
+    // movement: analog vector for updatePlayer, plus WASD flags so sprint / lean / emote checks still work
+    GP.mx=lx;GP.my=ly;gpKey('KeyW',ly<-.35);gpKey('KeyS',ly>.35);gpKey('KeyA',lx<-.35);gpKey('KeyD',lx>.35);
+    if(hit(10))GP.sprint=!GP.sprint;if(ly>-.45)GP.sprint=false;gpKey('ShiftLeft',GP.sprint);
+    // look: response curve, slower while aiming (like the mouse), optional invert
+    if(rx||ry){const ads=P.adsK>.5?(settings.adsSens==null?.6:settings.adsSens)*Math.sqrt(curZoom()):1,s=(settings.gpSens||1)*ads*dt;
+      const cx=Math.sign(rx)*Math.pow(Math.abs(rx),1.7),cy=Math.sign(ry)*Math.pow(Math.abs(ry),1.7);
+      P.yaw-=cx*3.6*s;P.pitch=clamp(P.pitch-cy*2.6*s*(settings.gpInvert?-1:1),-1.5,1.5)}
+    // triggers
+    const fireOn=rt>.35;if(fireOn&&!GP.k.fire){P.trigger=true;fire()}else if(!fireOn&&GP.k.fire)P.trigger=false;GP.k.fire=fireOn;
+    const adsOn=lt>.35;if(adsOn!==GP.k.ads){P.ads=adsOn;GP.k.ads=adsOn}
+    gpKey('Space',cur[0]);gpKey('ControlLeft',cur[1]);
+    gpKey('KeyF',cur[2]);if(hit(2)){const it=nearestInteract();if(it)interact();else startReload()}
+    if(hit(3)&&P.guns.length>1){P.cur=(P.cur+1)%P.guns.length;P.reloadT=0;P.swapT=.35;P.burstLeft=0}
+    if(hit(5))throwGrenade();if(hit(4))throwTactical();if(hit(11))melee();
+    if(MPM){if(hit(12))useStreak(0);if(hit(14))useStreak(1);if(hit(15))useStreak(2);if(hit(13)&&typeof toggleEmoteWheel==='function')toggleEmoteWheel()}
+    else{if(hit(12))fieldUpgrade();if(hit(14))playCard(0);if(hit(15))playCard(1);if(hit(13))playCard(2)}
+    gpKey('Tab',cur[8]);
+    if(hit(9))pause();
+    // rumble on shots and when you get hurt
+    if(P.lastShot!==GP.lastShot){GP.lastShot=P.lastShot;const d=curGun()&&def(curGun());const big=d&&(d.kind==='sniper'||d.kind==='shotgun');gpRumble(g,big?110:45,big?.55:.18,big?.4:.28)}
+    if(hurtFlash>GP.hurt+.05)gpRumble(g,160,.6,.3);GP.hurt=hurtFlash;
+  }else{
+    if(GP.mx||GP.my||Object.values(GP.k).some(Boolean)){GP.mx=GP.my=0;for(const c in GP.k)if(GP.k[c]&&c!=='fire'&&c!=='ads')gpKey(c,false);if(GP.k.fire){P.trigger=false;GP.k.fire=false}if(GP.k.ads){P.ads=false;GP.k.ads=false}}
+    if(state==='play'&&P.mpDead&&!P.menuOpen){if(hit(0)&&typeof kcClick==='function')kcClick();gpKey('Tab',cur[8]);if(hit(9))pause()}
+    else gpMenu(dt,cur,hit,lx,ly,ry);
+  }
+  GP.prev=cur}
+// ---- menu navigation: move a highlight between whatever buttons are on screen and not covered
+function gpCands(){const out=[];for(const el of document.querySelectorAll('button,select,input[type=range],input[type=text],input[type=checkbox],.tb,[data-go]')){
+    if(el.disabled||el.offsetParent===null)continue;const r=el.getBoundingClientRect();if(r.width<4||r.height<4||r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth)continue;
+    const cx=Math.min(innerWidth-1,Math.max(0,r.left+r.width/2)),cy=Math.min(innerHeight-1,Math.max(0,r.top+r.height/2)),top=document.elementFromPoint(cx,cy);
+    if(top&&(top===el||el.contains(top)||top.contains(el)))out.push({el,cx,cy,r})}return out}
+function gpSetFocus(el){if(GP.focus)GP.focus.classList.remove('gpFocus');GP.focus=el;if(el){el.classList.add('gpFocus');try{el.focus({preventScroll:true})}catch(e){}el.scrollIntoView({block:'nearest',inline:'nearest'})}}
+function gpMove(dx,dy){const c=gpCands();if(!c.length)return;const f=GP.focus&&c.find(o=>o.el===GP.focus);
+  if(!f){gpSetFocus(c.sort((a,b)=>a.cy-b.cy||a.cx-b.cx)[0].el);return}
+  let best=null,bs=1e9;for(const o of c){if(o.el===f.el)continue;const vx=o.cx-f.cx,vy=o.cy-f.cy,along=vx*dx+vy*dy;if(along<=4)continue;const side=Math.abs(vx*dy-vy*dx);if(side>along*4)continue;const s=along*along+side*side*.3;if(s<bs){bs=s;best=o}}
+  if(best)gpSetFocus(best.el)}
+function gpAdjust(el,dir){if(el.tagName==='SELECT'){const n=el.options.length;if(!n)return;el.selectedIndex=(el.selectedIndex+dir+n)%n;el.dispatchEvent(new Event('change',{bubbles:true}));return true}
+  if(el.type==='range'){const st=+el.step||1;el.value=Math.min(+el.max,Math.max(+el.min,+el.value+dir*st*Math.max(1,Math.round((+el.max-+el.min)/st/20))));el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));return true}return false}
+function gpMenu(dt,cur,hit,lx,ly,ry){if(!GP.on)return;
+  if(GP.focus&&(!document.contains(GP.focus)||GP.focus.offsetParent===null))gpSetFocus(null);
+  const dx=(cur[15]?1:0)-(cur[14]?1:0)||(Math.abs(lx)>.55?Math.sign(lx):0),dy=(cur[13]?1:0)-(cur[12]?1:0)||(Math.abs(ly)>.55?Math.sign(ly):0);
+  GP.navT-=dt;if(!dx&&!dy)GP.navT=0;
+  if((dx||dy)&&GP.navT<=0){GP.navT=GP.navT===0&&!GP.held?.32:.13;GP.held=true;if(dx&&GP.focus&&gpAdjust(GP.focus,dx)){}else gpMove(dy?0:dx,dy)}
+  if(!dx&&!dy)GP.held=false;
+  if(hit(0)){if(!GP.focus)gpMove(0,1);else if(GP.focus.type==='text'){GP.focus.focus()}else GP.focus.click()}
+  if(hit(1)||(hit(9)&&state==='paused')){if(state==='paused'||(state==='play'&&P.menuOpen))resume();else dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}))}
+  if(Math.abs(ry)>.2||cur[4]||cur[5]){const sc=(GP.focus&&GP.focus.closest('.menu,#gsmith,#wpick,.panel'))||document.scrollingElement;const amt=(ry+(cur[5]?1:0)-(cur[4]?1:0))*900*dt;let p=sc;while(p&&p!==document.body&&p.scrollHeight<=p.clientHeight+2)p=p.parentElement;(p||document.scrollingElement).scrollTop+=amt}}
+
+// ================= FRAME RATE: target FPS (auto = your display, up to 240), dynamic resolution, FPS counter =================
+const PERF={base:renderer.getPixelRatio(),scale:1,ints:[],hz:60,win:0,n:0,cool:0,fps:0,fpsN:0,fpsT:0};
+function perfGoal(){const t=settings.fpsTarget==null?'auto':settings.fpsTarget;if(!t)return 0;return t==='auto'?PERF.hz:Math.min(+t,PERF.hz)}
+function perfApply(){const pr=Math.max(.4,PERF.base*PERF.scale);if(Math.abs(pr-renderer.getPixelRatio())<.01)return;renderer.setPixelRatio(pr);if(composer){composer.setPixelRatio(pr);sizePost()}}
+function perfFrame(ms){if(!(ms>0&&ms<250))return;PERF.ints.push(ms);PERF.win+=ms;PERF.fpsN++;PERF.fpsT+=ms;
+  if(PERF.fpsT>=500){PERF.fps=Math.round(PERF.fpsN*1000/PERF.fpsT);PERF.fpsN=0;PERF.fpsT=0;const b=$('fpsBox');if(b){b.style.display=settings.showFps?'block':'none';if(settings.showFps)b.textContent=`${PERF.fps} FPS · ${Math.round(PERF.scale*100)}% res${perfGoal()?' · target '+Math.round(perfGoal()):''}`}}
+  if(PERF.win<1000)return;const a=PERF.ints.slice().sort((x,y)=>x-y),p10=a[Math.floor(a.length*.1)],avg=PERF.win/a.length;PERF.ints.length=0;PERF.win=0;
+  // the display's refresh rate: the fastest steady frame pace seen (menus are light, so they reveal it)
+  const hz=Math.min(240,Math.round(1000/p10));if(hz>PERF.hz*1.04||(state==='title'&&hz>PERF.hz))PERF.hz=hz>=110&&hz<=125?120:hz>=136&&hz<=150?144:hz>=55&&hz<=65?60:hz;
+  const goal=perfGoal();PERF.cool-=1;if(!goal||state!=='play'){if(!goal&&PERF.scale!==1){PERF.scale=1;perfApply()}return}
+  const fps=1000/avg;if(fps<goal*.9&&PERF.scale>.55){PERF.scale=Math.max(.55,PERF.scale*(fps<goal*.7?.82:.9));PERF.cool=6;perfApply()}
+  else if(fps>goal*.97&&PERF.scale<1&&PERF.cool<=0){PERF.scale=Math.min(1,PERF.scale*1.07);PERF.cool=1;perfApply()}}
+
+// ================= AMBIENT OCCLUSION (Ultra / Cinematic): soft contact shadows where things meet =================
+function makeAO(cmp){if(settings.ao===false||!THREE.DepthTexture||!THREE.ShaderPass)return null;
+  for(const rt of[cmp.renderTarget1,cmp.renderTarget2]){const dt=new THREE.DepthTexture();dt.type=THREE.UnsignedIntType;rt.depthTexture=dt;rt.depthBuffer=true}
+  const cine=settings.quality==='cinematic';
+  const sh={uniforms:{tDiffuse:{value:null},tDepth:{value:null},projInv:{value:new THREE.Matrix4()},projY:{value:1},res:{value:new THREE.Vector2(1,1)},radius:{value:.6},strength:{value:cine?1.5:1.25},samples:{value:cine?16:10}},
+    vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+    fragmentShader:`uniform sampler2D tDiffuse,tDepth;uniform mat4 projInv;uniform float projY,radius,strength,samples;uniform vec2 res;varying vec2 vUv;
+    vec3 vp(vec2 uv){float d=texture2D(tDepth,uv).x;vec4 p=projInv*vec4(uv*2.-1.,d*2.-1.,1.);return p.xyz/p.w;}
+    void main(){vec4 col=texture2D(tDiffuse,vUv);float d=texture2D(tDepth,vUv).x;if(d>=.99999){gl_FragColor=col;return;}
+      vec2 px=1./res;vec3 P=vp(vUv),A=vp(vUv+vec2(px.x,0.)),B=vp(vUv-vec2(px.x,0.)),C=vp(vUv+vec2(0.,px.y)),D=vp(vUv-vec2(0.,px.y));
+      vec3 dx=abs(A.z-P.z)<abs(P.z-B.z)?A-P:P-B,dy=abs(C.z-P.z)<abs(P.z-D.z)?C-P:P-D;vec3 N=normalize(cross(dx,dy));
+      float z=-P.z;float rpx=clamp(radius*projY*.5*res.y/z,3.,90.);
+      float nz=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))));
+      float ao=0.;float r2=radius*radius;
+      for(int i=0;i<16;i++){if(float(i)>=samples)break;float t=(float(i)+.5)/samples;float an=t*43.98+nz*6.2832;
+        vec3 S=vp(vUv+vec2(cos(an),sin(an))*t*rpx*px);vec3 v=S-P;float vv=dot(v,v);
+        if(vv<1e-5*z*z)continue;ao+=max(0.,dot(v,N)*inversesqrt(vv)-.3)*max(0.,1.-vv/r2);}
+      ao=clamp(ao/samples*strength*2.8,0.,.8)*(1.-smoothstep(20.,50.,z));
+      gl_FragColor=vec4(col.rgb*(1.-ao),col.a);}`};
+  const pass=new THREE.ShaderPass(sh);
+  pass.render=function(r,w,rb,dt,mask){this.uniforms.tDepth.value=rb.depthTexture;this.uniforms.projInv.value.copy(camera.projectionMatrixInverse);this.uniforms.projY.value=camera.projectionMatrix.elements[5];
+    THREE.ShaderPass.prototype.render.call(this,r,w,rb,dt,mask)};
+  pass.setSize=function(){const pr=renderer.getPixelRatio();this.uniforms.res.value.set(innerWidth*pr,innerHeight*pr)};
+  return pass}
+
+// ---- settings rows: frame rate, FPS counter, ambient occlusion, controller
+{const fb=document.createElement('div');fb.id='fpsBox';fb.style.cssText='position:fixed;right:8px;top:8px;z-index:50;font-size:10px;color:#9fe39f;text-shadow:1px 1px 0 #000;pointer-events:none;display:none';document.body.appendChild(fb);
+  const st=document.createElement('style');st.textContent='.gpFocus{outline:3px solid #f2c14e!important;outline-offset:2px;box-shadow:0 0 12px rgba(242,193,78,.7)!important}';document.head.appendChild(st);
+  const box=$('sVoice');if(box){const w=document.createElement('div');const B='class="btn" style="font-size:10px;padding:8px 12px"';
+    w.innerHTML=`<div class="row">Target frame rate <button ${B} id="fpsBtn"></button></div><div class="row">Show FPS <button ${B} id="fpsShowBtn"></button></div>
+      <div class="row">Ambient occlusion <button ${B} id="aoBtn"></button></div>
+      <div class="row">Controller look speed <input type="range" id="sGp" min="0.3" max="3" step="0.05"></div>
+      <div class="row">Controller invert look <button ${B} id="gpInvBtn"></button></div><div class="row">Controller vibration <button ${B} id="gpRumBtn"></button></div>`;
+    box.parentNode.insertBefore(w,box);
+    const FT=['auto',120,144,60,0],ftName=v=>v==='auto'?'AUTO ('+PERF.hz+' HZ DISPLAY)':v?v+' FPS':'OFF (FIXED RESOLUTION)';
+    const paint=()=>{const ft=settings.fpsTarget==null?'auto':settings.fpsTarget;$('fpsBtn').textContent=ftName(ft);$('fpsShowBtn').textContent=settings.showFps?'ON':'OFF';
+      $('aoBtn').textContent=settings.ao===false?'OFF':(REALISM?'ON':'ON (ULTRA / CINEMATIC ONLY)');$('gpInvBtn').textContent=settings.gpInvert?'ON':'OFF';$('gpRumBtn').textContent=settings.gpRumble===false?'OFF':'ON';$('sGp').value=settings.gpSens||1};
+    $('fpsBtn').onclick=()=>{const ft=settings.fpsTarget==null?'auto':settings.fpsTarget;settings.fpsTarget=FT[(FT.indexOf(ft)+1)%FT.length];saveSettings();paint()};
+    $('fpsShowBtn').onclick=()=>{settings.showFps=!settings.showFps;saveSettings();paint()};
+    $('aoBtn').onclick=()=>{settings.ao=settings.ao===false;saveSettings();paint();toast('Ambient occlusion changes after a restart / reload')};
+    $('gpInvBtn').onclick=()=>{settings.gpInvert=!settings.gpInvert;saveSettings();paint()};$('gpRumBtn').onclick=()=>{settings.gpRumble=settings.gpRumble===false;saveSettings();paint()};
+    $('sGp').oninput=()=>{settings.gpSens=+$('sGp').value;saveSettings()};paint();setInterval(()=>{if(!$('menuSet').classList.contains('hidden'))$('fpsBtn').textContent=ftName(settings.fpsTarget==null?'auto':settings.fpsTarget)},2000)}}
 // ================= game flow =================
 function lockPointer(){if(NOLOCK)return;try{const p=renderer.domElement.requestPointerLock();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
 function startGame(){
@@ -3355,7 +3480,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.17.1619';
+const GAME_VERSION=/*VER*/'2026.10.17.1631';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
