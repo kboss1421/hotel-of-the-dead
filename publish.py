@@ -63,7 +63,7 @@ def main():
     cl = os.path.join(GAME, 'changelog.txt')
     if os.path.exists(cl):
         notes = open(cl, encoding='utf-8').read().strip().split('\n\n')[0]
-    json.dump({'version': version, 'date': datetime.datetime.now().isoformat(timespec='seconds'), 'notes': notes, 'files': files},
+    json.dump({'version': version, 'date': datetime.datetime.now().isoformat(timespec='seconds'), 'notes': notes, 'files': files, 'desktop': cfg.get('desktop', '')},
               open(os.path.join(HERE, 'docs', 'version.json'), 'w', encoding='utf-8'), indent=1)
     open(os.path.join(HERE, 'docs', '.nojekyll'), 'w').close()
 
@@ -90,6 +90,13 @@ def main():
                         continue
                     z.write(p, 'Hotel of the Dead Desktop/Hotel of the Dead/' + rel)
             z.writestr('Hotel of the Dead Desktop/Hotel of the Dead/resources/app/update.json', json.dumps(upd))
+        # the OneDrive copy is what the website's Download button points at: overwrite it in place (keeps the share link)
+        od = os.path.join(GAME, 'HotelOfTheDead-Desktop.zip')
+        if os.path.exists(od):
+            data = open(out, 'rb').read()
+            with open(od, 'r+b') as f:
+                f.seek(0); f.write(data); f.truncate()
+            print('  Updated the OneDrive download too (same link).')
         print('\n  Desktop zip ready:', out)
         print(f"  Upload it at https://github.com/{cfg['user']}/{cfg['repo']}/releases/new (tag: v{version})")
 
