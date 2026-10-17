@@ -9,10 +9,11 @@ const crypto = require('crypto');
 const PORT = +process.env.PORT || 8090;
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const COOP_TYPES = new Set(['zs', 'zr', 'zre', 'zk', 'zatk', 'zhit', 'pu', 'pug', 'znuke', 'zone', 'zfloor', 'trap', 'zsync', 'zover', 'zwin']);
-const MP_MAPS = ['royale', 'frost', 'skyline', 'manor', 'refinery', 'temple', 'nuketown', 'shipyard', 'oldtown', 'farm', 'downtown'];
+const MP_MAPS = ['royale', 'frost', 'skyline', 'manor', 'refinery', 'temple', 'nuketown', 'shipyard', 'oldtown', 'farm', 'downtown', 'colosseum'];
 const ZM_MAPS = ['hotel', 'nuketown', 'manor', 'refinery', 'temple', 'shipyard', 'oldtown', 'farm', 'downtown', 'frost'];
 const BOT_NAMES = ['Viper', 'Ghost', 'Reaper', 'Nomad', 'Havoc', 'Rook', 'Specter', 'Blaze', 'Talon', 'Raven', 'Frost', 'Diesel', 'Jinx', 'Onyx', 'Wolf', 'Cobra', 'Saber', 'Hex', 'Bishop', 'Kodiak'];
-const MAX_IN_ROOM = 12, PUBLIC_HUMANS = 8;
+const MAX_IN_ROOM = 10, PUBLIC_HUMANS = 8, TEAM_SIZE = 5, SCORE_LIMIT = 100, SND_ROUNDS = 4, SND_MAP = 'colosseum';
+const MODES = ['tdm', 'ffa', 'zm', 'snd'];
 const rnd = a => a[Math.floor(Math.random() * a.length)];
 const code = (n = 6) => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < n; i++) s += A[crypto.randomInt(A.length)]; return s; };
 const clean = (s, n) => String(s || '').replace(/[^A-Za-z0-9 _-]/g, '').slice(0, n).trim();
@@ -54,41 +55,104 @@ const sendTo = (sock, o) => { if (sock && !sock.destroyed) sock.write(frame(JSON
 // ---------- match rooms (same rules as the game's own server) ----------
 const rooms = new Map();
 function createRoom({ map, mode, bots, priv, owner }) {
+  if (mode === 'snd' && map === 'hotel') map = SND_MAP;
   if (map === 'hotel') mode = 'zm';
   const id = code(8);
   const room = { id, map, mode, priv: !!priv, owner, allowed: new Set(), tickets: new Map(), minutes: 10, scores: { blue: 0, red: 0 }, time: 600, running: true, created: Date.now(), emptySince: Date.now() };
-  const botTarget = mode === 'zm' ? 0 : Math.max(0, Math.min(12, bots | 0));
+  const botTarget = mode === 'zm' ? 0 : Math.max(0, Math.min(MAX_IN_ROOM, bots | 0));
   const players = new Map(), botsMap = new Map(); let nextId = 1, nextBot = 1001, hostId = null;
-  const limit = () => (mode === 'tdm' ? 40 : 20);
+  const limit = () => mode === 'snd' ? SND_ROUNDS : SCORE_LIMIT;
   const info = () => ({ map, mode, limit: limit(), time: room.time, scores: room.scores, running: room.running });
-  const pinfo = p => Object.assign({ id: p.id, name: p.name, team: p.team, skin: p.skin, kills: p.kills, deaths: p.deaths, score: p.score }, p.bot ? { bot: true } : {});
+  const pinfo = p => Object.assign({ id: p.id, name: p.name, team: p.team, skin: p.skin, banner: p.banner || '', kills: p.kills, deaths: p.deaths, score: p.score }, p.bot ? { bot: true } : {});
   const everyone = () => [...players.values(), ...botsMap.values()];
   const send = (p, o) => sendTo(p.sock, o);
   const broadcast = (o, ex) => { const f = frame(JSON.stringify(o)); for (const p of players.values()) if (p !== ex && !p.sock.destroyed) p.sock.write(f); };
   const stats = () => { const s = {}; for (const p of everyone()) s[p.id] = [p.kills, p.deaths, p.score]; return s; };
-  const pickTeam = pref => { if (mode === 'zm') return 'blue'; if (mode === 'ffa') return null; if (pref) return pref;
-    const n = t => everyone().filter(p => p.team === t).length; return n('blue') <= n('red') ? 'blue' : 'red'; };
+  const pickTeam = pref => { if (mode === 'zm') return 'blue'; if (mode === 'ffa') return null;
+    // a party keeps its team, except S&D without bots, which needs someone on both sides
+    const n = t => everyone().filter(p => p.team === t).length; if (pref && n(pref) < TEAM_SIZE && !(mode === 'snd' && !botTarget)) return pref; return n('blue') <= n('red') ? 'blue' : 'red'; };
   const rosterMsg = () => ({ t: 'roster', host: hostId, bots: [...botsMap.values()].map(pinfo) });
   function rebalance() {
     let changed = false; const hid = players.size ? Math.min(...players.keys()) : null; if (hid !== hostId) { hostId = hid; changed = true; }
     const want = players.size ? Math.max(0, botTarget - players.size) : 0;
     while (botsMap.size < want) { const used = new Set([...botsMap.values()].map(b => b.name.replace(' [BOT]', ''))); const name = BOT_NAMES.find(n => !used.has(n)) || ('Bot' + nextBot);
-      const b = { id: nextBot, name: name + ' [BOT]', team: pickTeam() || ('p' + nextBot), skin: 'default', kills: 0, deaths: 0, score: 0, bot: true }; botsMap.set(b.id, b); nextBot++; changed = true; }
+      const b = { id: nextBot, name: name + ' [BOT]', team: pickTeam() || ('p' + nextBot), skin: 'default', kills: 0, deaths: 0, score: 0, bot: true, x: 0, z: 0 }; botsMap.set(b.id, b); nextBot++; changed = true; }
     while (botsMap.size > want) { let pool = [...botsMap.values()];
-      if (mode === 'tdm') { const n = t => everyone().filter(p => p.team === t).length; const big = n('blue') >= n('red') ? 'blue' : 'red'; if (pool.some(b => b.team === big)) pool = pool.filter(b => b.team === big); }
-      botsMap.delete(pool[pool.length - 1].id); changed = true; }
+      if (mode === 'tdm' || mode === 'snd') { const n = t => everyone().filter(p => p.team === t).length; const big = n('blue') >= n('red') ? 'blue' : 'red'; if (pool.some(b => b.team === big)) pool = pool.filter(b => b.team === big); }
+      const gone = pool[pool.length - 1]; botsMap.delete(gone.id); sndOut(gone.id, gone.x, gone.z); changed = true; }
     if (changed) broadcast(rosterMsg());
   }
-  const restart = () => { room.scores = { blue: 0, red: 0 }; room.time = room.minutes * 60; room.running = true; for (const q of everyone()) q.kills = q.deaths = q.score = 0; broadcast({ t: 'restart', room: info() }); };
+  const restart = () => { room.scores = { blue: 0, red: 0 }; room.time = room.minutes * 60; room.running = true; room.snd = sndNew(); for (const q of everyone()) q.kills = q.deaths = q.score = 0; broadcast({ t: 'restart', room: info() }); sndRound(); };
   function endMatch() { room.running = false; broadcast({ t: 'end', scores: room.scores, standings: everyone().map(pinfo).sort((a, b) => b.score - a.score || b.kills - a.kills) }); setTimeout(restart, 12000); }
-  function checkEnd() { if (!room.running || mode === 'zm') return; const lim = limit();
+  function checkEnd() { if (!room.running || mode === 'zm' || mode === 'snd') return; const lim = limit();
     if (mode === 'tdm' ? (room.scores.blue >= lim || room.scores.red >= lim) : everyone().some(p => p.kills >= lim)) endMatch(); }
   const actingAs = (p, m) => (m.as != null && p.id === hostId && botsMap.has(m.as)) ? botsMap.get(m.as) : p;
   const num = (v, lo, hi) => { const x = Number(v); return Number.isFinite(x) ? Math.max(lo, Math.min(hi, x)) : lo; };
+  // ---------- Search and Destroy: the server runs the rounds (same rules as the game's own server) ----------
+  // one life per round; clients report bomb pickups, plants and defuses, the server checks them and decides every round
+  const SND_ROUND = 150, SND_FUSE = 40;
+  const sndNew = () => ({ round: 0, wins: { blue: 0, red: 0 }, att: Math.random() < .5 ? 'blue' : 'red', phase: 'wait', t: SND_ROUND, fuse: 0, bomb: { c: null, x: 0, z: 0, pl: false, site: null, by: null }, alive: new Set(), gen: 0 });
+  const sndOther = t => t === 'blue' ? 'red' : 'blue';
+  const sndCounts = aliveOnly => { const n = { blue: 0, red: 0 }; for (const e of everyone()) if (e.team in n && (!aliveOnly || room.snd.alive.has(e.id))) n[e.team]++; return n; };
+  const sndMsg = (ev, kw) => { const s = room.snd, b = s.bomb; return Object.assign({ t: 'snd', ev, round: s.round, att: s.att, wins: s.wins, phase: s.phase, tl: s.t, fuse: s.fuse, c: b.c, bx: +b.x.toFixed(2), bz: +b.z.toFixed(2), pl: b.pl, site: b.site, ids: [...s.alive].sort((a, c) => a - c), al: sndCounts(true), target: limit(), half: Math.max(1, limit() - 1) }, kw || {}); };
+  function sndRound() {
+    const s = room.snd; if (mode !== 'snd' || !room.running) return;
+    const n = sndCounts(false);
+    if (!players.size || !n.blue || !n.red) { if (s.phase !== 'wait') { s.phase = 'wait'; s.alive = new Set(); broadcast(sndMsg('wait')); } return; }
+    s.round++; const swap = s.round > 1 && (s.round - 1) % Math.max(1, limit() - 1) === 0; if (swap) s.att = sndOther(s.att);
+    s.phase = 'live'; s.t = SND_ROUND; s.fuse = 0; s.alive = new Set(everyone().filter(e => e.team === 'blue' || e.team === 'red').map(e => e.id));
+    const atts = everyone().filter(e => e.team === s.att);
+    s.bomb = { c: atts[Math.floor(Math.random() * atts.length)].id, x: 0, z: 0, pl: false, site: null, by: null };
+    broadcast(sndMsg('round', { swap }));
+  }
+  function sndEnd(win, reason, kw) {
+    const s = room.snd; if (s.phase !== 'live') return;
+    s.phase = 'over'; s.wins[win]++; room.scores.blue = s.wins.blue; room.scores.red = s.wins.red; s.bomb.c = null;
+    broadcast(sndMsg('end', Object.assign({ win, reason }, kw || {})));
+    const gen = ++s.gen;
+    if (s.wins[win] >= limit()) setTimeout(() => { if (room.snd === s && s.gen === gen && room.running) endMatch(); }, 3000);
+    else setTimeout(() => { if (room.snd === s && s.gen === gen) sndRound(); }, 5000);
+  }
+  function sndCheck() {
+    const s = room.snd; if (s.phase !== 'live') return; const al = sndCounts(true), att = s.att, dfn = sndOther(att);
+    if (!al[dfn]) sndEnd(att, 'elim'); else if (!al[att] && !s.bomb.pl) sndEnd(dfn, 'elim');
+  }
+  // someone is out of the round (died, left, or a bot was removed); a carrier drops the bomb where they were
+  function sndOut(id, x, z) {
+    const s = room.snd; if (mode !== 'snd' || s.phase !== 'live' || !s.alive.has(id)) return; s.alive.delete(id);
+    const b = s.bomb; if (b.c === id) { b.c = null; if (Number.isFinite(x) && Number.isFinite(z)) { b.x = x; b.z = z; } broadcast(sndMsg('drop')); }
+    sndCheck();
+  }
+  function sndTick() {
+    const s = room.snd; if (!room.running) return; if (s.phase === 'wait') { sndRound(); return; } if (s.phase !== 'live') return;
+    if (s.bomb.pl) { if (--s.fuse <= 0) { sndEnd(s.att, 'boom', { boom: 1 }); return; } } else if (--s.t <= 0) { sndEnd(sndOther(s.att), 'time'); return; }
+    broadcast(sndMsg('tick'));
+  }
+  // bpick / bprog / bplant / bdefuse from a player, or from the host for one of its bots
+  function sndAction(p, m) {
+    const s = room.snd; if (mode !== 'snd' || s.phase !== 'live') return; const who = actingAs(p, m); if (!s.alive.has(who.id)) return;
+    const b = s.bomb, att = who.team === s.att;
+    if (m.t === 'bpick') { if (att && !b.pl && b.c == null) { b.c = who.id; broadcast(sndMsg('pick', { by: who.id })); } }
+    else if (m.t === 'bprog') { if (m.k === 'plant' || m.k === 'defuse') broadcast({ t: 'sndp', k: m.k, by: who.id, p: +num(m.p, 0, 1).toFixed(2) }, p); }
+    else if (m.t === 'bplant') {
+      const x = Number(m.x), z = Number(m.z);
+      if (att && !b.pl && b.c === who.id && (m.site === 'A' || m.site === 'B') && Number.isFinite(x) && Number.isFinite(z)) {
+        Object.assign(b, { pl: true, site: m.site, x, z, by: who.id, c: null }); s.fuse = SND_FUSE; who.score += 300; broadcast(sndMsg('plant', { by: who.id }));
+      }
+    } else if (m.t === 'bdefuse') { if (!att && b.pl) { who.score += 300; sndEnd(who.team, 'defuse', { by: who.id }); } }
+  }
+  const sndPos = (e, s) => { const x = Number(s && s.x), z = Number(s && s.z); if (e && Number.isFinite(x) && Number.isFinite(z)) { e.x = x; e.z = z; } };
+  room.snd = sndNew();
   function handle(p, m) {
     const t = m.t;
-    if (t === 'state') broadcast({ t: 'state', id: p.id, s: m.s }, p);
-    else if (t === 'bstate') { if (p.id === hostId && Array.isArray(m.l)) broadcast({ t: 'bstate', l: m.l.slice(0, 32) }, p); }
+    if (t === 'state') { if (mode === 'snd') sndPos(p, m.s); broadcast({ t: 'state', id: p.id, s: m.s }, p); }
+    else if (t === 'bstate') {
+      if (p.id === hostId && Array.isArray(m.l)) {
+        if (mode === 'snd') for (const a of m.l.slice(0, 32)) if (Array.isArray(a)) sndPos(botsMap.get(a[0]), { x: a[1], z: a[3] });
+        broadcast({ t: 'bstate', l: m.l.slice(0, 32) }, p);
+      }
+    }
+    else if (t === 'bpick' || t === 'bprog' || t === 'bplant' || t === 'bdefuse') sndAction(p, m);
     else if (COOP_TYPES.has(t)) {
       if (mode !== 'zm') return; const out = Object.assign({}, m, { from: p.id });
       if (t === 'zhit' || t === 'znuke') { const h = players.get(hostId); if (h && h !== p) send(h, out); }
@@ -102,7 +166,9 @@ function createRoom({ map, mode, bots, priv, owner }) {
     } else if (t === 'died') {
       if (!room.running) return; const v = actingAs(p, m); v.deaths++; const killer = players.get(m.by) || botsMap.get(m.by); const head = !!m.head;
       if (killer && killer !== v) { killer.kills++; killer.score += 100 + (head ? 25 : 0); if (mode === 'tdm' && killer.team in room.scores) room.scores[killer.team]++; }
-      broadcast({ t: 'kill', killer: killer ? killer.id : null, victim: v.id, w: String(m.w || '').slice(0, 24), head, scores: room.scores, stats: stats() }); checkEnd();
+      broadcast({ t: 'kill', killer: killer ? killer.id : null, victim: v.id, w: String(m.w || '').slice(0, 24), head, scores: room.scores, stats: stats() });
+      if (mode === 'snd') { sndPos(v, m); sndOut(v.id, v.x, v.z); }
+      checkEnd();
     } else if (t === 'shot' || t === 'fx') {
       // voice handshakes go to one player only
       if (m.k === 'rtc' && m.to != null) { const tp = players.get(m.to); if (tp) send(tp, Object.assign({}, m, { from: p.id })); return; }
@@ -118,15 +184,15 @@ function createRoom({ map, mode, bots, priv, owner }) {
         const tk = room.tickets.get(ticket);
         if (room.priv && !tk) { sendTo(sock, { t: 'full', why: 'private' }); sock.end(); return; }
         if (players.size >= MAX_IN_ROOM) { sendTo(sock, { t: 'full' }); sock.end(); return; }
-        p = { id: nextId++, name: clean(msg.name, 14) || 'Player', sock, kills: 0, deaths: 0, score: 0, skin: String(msg.skin || 'default').replace(/[^a-z]/g, '').slice(0, 12) || 'default' };
+        p = { id: nextId++, name: clean(msg.name, 14) || 'Player', sock, kills: 0, deaths: 0, score: 0, x: 0, z: 0, skin: String(msg.skin || 'default').replace(/[^a-z]/g, '').slice(0, 12) || 'default', banner: String(msg.banner || '').replace(/[^a-z0-9]/g, '').slice(0, 16) };
         p.team = pickTeam(tk && tk.team) || ('p' + p.id);
         const others = [...players.values()].map(pinfo); players.set(p.id, p); room.emptySince = 0;
-        send(p, { t: 'welcome', id: p.id, team: p.team, room: info(), players: others }); broadcast({ t: 'join', p: pinfo(p) }, p); send(p, rosterMsg()); rebalance(); hubRoomChanged(room); return;
+        send(p, { t: 'welcome', id: p.id, team: p.team, room: info(), players: others }); if (mode === 'snd') send(p, sndMsg('state')); broadcast({ t: 'join', p: pinfo(p) }, p); send(p, rosterMsg()); rebalance(); hubRoomChanged(room); return;
       }
       handle(p, msg);
-    }, () => { if (p && players.delete(p.id)) { broadcast({ t: 'leave', id: p.id }); rebalance(); if (!players.size) room.emptySince = Date.now(); hubRoomChanged(room); } p = null; });
+    }, () => { if (p && players.delete(p.id)) { broadcast({ t: 'leave', id: p.id }); sndOut(p.id, p.x, p.z); rebalance(); if (!players.size) room.emptySince = Date.now(); hubRoomChanged(room); } p = null; });
   };
-  room.tick = () => { if (!room.running || !players.size || mode === 'zm') return; room.time--; if (room.time <= 0) endMatch(); else if (room.time % 5 === 0) broadcast({ t: 'time', time: room.time, scores: room.scores }); };
+  room.tick = () => { if (mode === 'snd') { if (players.size) sndTick(); return; } if (!room.running || !players.size || mode === 'zm') return; room.time--; if (room.time <= 0) endMatch(); else if (room.time % 5 === 0) broadcast({ t: 'time', time: room.time, scores: room.scores }); };
   rooms.set(id, room); return room;
 }
 setInterval(() => { const t = Date.now(); for (const r of rooms.values()) { r.tick(); if (r.emptySince && t - r.emptySince > 90000) rooms.delete(r.id); } }, 1000);
@@ -156,7 +222,7 @@ function leaveParty(u) {
 function unqueue(uid) { const i = queue.findIndex(q => q.uids.includes(uid)); if (i >= 0) { const q = queue.splice(i, 1)[0]; for (const id of q.uids) push(id, { t: 'mm', state: 'idle' }); } }
 // send a group into a room: each gets a ticket; teams stay together in TDM
 function sendIn(room, uids, why) {
-  const team = room.mode === 'tdm' ? (() => { let b = 0, r = 0; for (const t of room.tickets.values()) t.team === 'red' ? r++ : b++; return b <= r ? 'blue' : 'red'; })() : null;
+  const team = room.mode === 'tdm' || room.mode === 'snd' ? (() => { let b = 0, r = 0; for (const t of room.tickets.values()) t.team === 'red' ? r++ : b++; return b <= r ? 'blue' : 'red'; })() : null;
   for (const id of uids) { const u = users.get(id); if (!u) continue; const tk = ticketFor(room, u, team); u.status = 'in a match'; push(id, { t: 'match', room: room.id, ticket: tk, map: room.map, mode: room.mode, priv: room.priv, why }); }
   for (const id of uids) { const u = users.get(id); if (u && u.party) { const p = parties.get(u.party); if (p && p.leader === id) p.room = room.id; } }
   presence();
@@ -172,7 +238,7 @@ setInterval(() => {
       // wait a little for others to queue so people land together
       const same = queue.filter(o => o.mode === q.mode); const total = same.reduce((a, o) => a + o.uids.length, 0);
       if (waited < 8000 && total < 2) continue;
-      room = createRoom({ map: rnd(q.mode === 'zm' ? ZM_MAPS : MP_MAPS), mode: q.mode, bots: q.mode === 'zm' ? 0 : 8 });
+      room = createRoom({ map: q.mode === 'snd' ? SND_MAP : rnd(q.mode === 'zm' ? ZM_MAPS : MP_MAPS), mode: q.mode, bots: q.mode === 'zm' ? 0 : MAX_IN_ROOM });
       for (const o of same) { if (room.humans() + o.uids.length > PUBLIC_HUMANS) continue; sendIn(room, o.uids, 'matchmaking'); o.done = true; }
     } else { sendIn(room, q.uids, 'matchmaking'); q.done = true; }
   }
@@ -216,14 +282,14 @@ function hubSession(sock) {
         const room = party.room && rooms.get(party.room); if (room && room.priv) room.allowed.add(to);
         push(to, { t: 'invite', from: u.name, party: party.code }); sendTo(sock, { t: 'toast', text: 'Invite sent to ' + tu.name }); break; }
       case 'mm.queue': {
-        const mode = ['tdm', 'ffa', 'zm'].includes(m.mode) ? m.mode : 'tdm';
+        const mode = MODES.includes(m.mode) ? m.mode : 'tdm';
         if (p && !lead) { sendTo(sock, { t: 'toast', text: 'Only the party leader can start matchmaking' }); break; }
         const uids = p ? p.members.filter(id => online(users.get(id))) : [u.uid]; unqueue(u.uid);
         queue.push({ uids, mode, since: Date.now() }); for (const id of uids) push(id, { t: 'mm', state: 'searching', mode }); break; }
       case 'mm.cancel': if (!p || lead) unqueue(u.uid); break;
       case 'private.create': {
         if (p && !lead) { sendTo(sock, { t: 'toast', text: 'Only the party leader can start a private match' }); break; }
-        const mode = ['tdm', 'ffa', 'zm'].includes(m.mode) ? m.mode : 'tdm'; const map = (mode === 'zm' ? ZM_MAPS : MP_MAPS).includes(m.map) ? m.map : 'nuketown';
+        const mode = MODES.includes(m.mode) ? m.mode : 'tdm'; const map = (mode === 'zm' ? ZM_MAPS : MP_MAPS).includes(m.map) ? m.map : mode === 'snd' ? SND_MAP : 'nuketown';
         const room = createRoom({ map, mode, bots: m.bots | 0, priv: true, owner: u.uid }); const uids = p ? p.members.filter(id => online(users.get(id))) : [u.uid];
         for (const id of uids) room.allowed.add(id); sendIn(room, uids, 'private match'); break; }
       case 'private.invite': {
