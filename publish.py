@@ -51,9 +51,8 @@ def main():
     html = re.sub(r"const CLOUD_HUB=/\*HUB\*/'[^']*';", "const CLOUD_HUB=/*HUB*/'%s';" % cfg.get('hub', '').rstrip('/'), html)
     html = re.sub(r"const GAME_VERSION=/\*VER\*/'[^']*';", "const GAME_VERSION=/*VER*/'%s';" % version, html)
     open(os.path.join(play, 'index.html'), 'w', encoding='utf-8').write(html)
-    if os.path.exists(os.path.join(play, 'lib')):
-        shutil.rmtree(os.path.join(play, 'lib'))
-    shutil.copytree(os.path.join(GAME, 'lib'), os.path.join(play, 'lib'))
+    # copy over the top (OneDrive can hold folders open, so never delete them first)
+    shutil.copytree(os.path.join(GAME, 'lib'), os.path.join(play, 'lib'), dirs_exist_ok=True)
     files = ['index.html']
     for root, _, names in os.walk(os.path.join(play, 'lib')):
         for n in names:
