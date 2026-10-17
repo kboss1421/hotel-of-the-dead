@@ -380,7 +380,7 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
   </div>
 </div>
 <div id="escMenu" class="overlay hidden" style="z-index:60"><div class="card" style="max-width:420px;text-align:center"><h1 style="font-size:24px">MENU</h1>
-  <div class="escBtns"><button class="btn red" id="escReturn">RETURN</button><button class="btn" id="escSettings">SETTINGS</button><button class="btn" id="escClose">CLOSE GAME</button></div><p id="escNote" style="font-size:9px"></p></div></div>
+  <div class="escBtns"><button class="btn red" id="escReturn">RETURN</button><button class="btn" id="escSettings">SETTINGS</button><button class="btn" id="escFs">FULLSCREEN</button><button class="btn" id="escClose">CLOSE GAME</button></div><p id="escNote" style="font-size:9px"></p></div></div>
 <div id="hubInvite" class="hidden"></div>
 <div id="achPop"></div>
 <div id="tablet" class="overlay hidden"><div class="laptop"><div class="lscreen"><div class="lbar">TACTICAL ZAP &middot; click a spot on the map to strike (stuns for 0.2s)</div><canvas id="tabCanvas"></canvas></div><div class="lbase"></div><button class="btn pill" id="tabCancel">CANCEL (ESC)</button></div></div>
@@ -396,7 +396,7 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
 <div id="pause" class="overlay hidden">
   <div class="card" style="max-width:560px;text-align:center">
     <h1>PAUSED</h1>
-    <div class="escBtns"><button class="btn red" id="resumeBtn">RETURN</button><button class="btn" id="pSetBtn">SETTINGS</button><button class="btn" id="quitBtn">LEAVE GAME</button></div>
+    <div class="escBtns"><button class="btn red" id="resumeBtn">RETURN</button><button class="btn" id="pSetBtn">SETTINGS</button><button class="btn" id="pFsBtn">FULLSCREEN</button><button class="btn" id="quitBtn">LEAVE GAME</button></div>
     <div id="pSettings" class="hidden" style="text-align:left">
       <div class="row">Sensitivity <input type="range" id="pSens" min="0.2" max="3" step="0.05"></div>
       <div class="row">Aiming sensitivity <input type="range" id="pAds" min="0.15" max="1.5" step="0.05"></div>
@@ -443,6 +443,8 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
 <script src="lib/examples/js/postprocessing/ShaderPass.js"></script>
 <script src="lib/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script src="lib/examples/js/loaders/RGBELoader.js"></script>
+<script src="lib/examples/js/loaders/GLTFLoader.js"></script>
+<script src="lib/examples/js/utils/SkeletonUtils.js"></script>
 <script src="lib/examples/js/shaders/FXAAShader.js"></script>
 <script src="lib/examples/js/environments/RoomEnvironment.js"></script>
 <script>
@@ -1494,15 +1496,96 @@ function armIK(sh,target,pole){const a=HB.upper[2],b=HB.fore[2]+HB.hand[1]*.42;c
   const gam=Math.acos(clamp((a*a+b*b-d*d)/(2*a*b),-1,1)),alp=Math.acos(clamp((a*a+d*d-b*b)/(2*a*d),-1,1));
   v.y.copy(v.d).negate();v.p.copy(pole).addScaledVector(v.d,-pole.dot(v.d)).normalize();v.z.copy(v.p).negate();v.x.crossVectors(v.y,v.z).normalize();v.z.crossVectors(v.x,v.y);
   v.m.makeBasis(v.x,v.y,v.z);v.q.setFromRotationMatrix(v.m);v.r.setFromAxisAngle(new THREE.Vector3(1,0,0),alp);sh.quaternion.copy(v.q).multiply(v.r);sh.userData.elbow.rotation.set(-(Math.PI-gam),0,0)}
+// ================= REAL PEOPLE (Ultra / Cinematic): rigged Rocketbox humans (Microsoft, MIT licence: lib/chars/LICENSE-Rocketbox.txt) =================
+// Soldiers and zombies keep their code-built joint rig: the animations, IK, emotes, death fall and hit boxes all still drive it.
+// Its meshes move to a hidden layer and a skinned Rocketbox body, parented to the same root, copies the rig's joint rotations
+// whenever it is drawn. LOD1 (30% of the triangles) past RCH.lod. Skins (applySkinToSoldier) and bombers keep the code body.
+const RCH={on:REALISM&&!!(THREE.GLTFLoader&&THREE.SkeletonUtils)&&settings.realChars!==false,tpl:{},wait:[],lod:14,HIDE:30,
+  sets:{sol:['mm01','mm03','mm04'],zom:['zm01','zm08','zm12','zf09']}};
+const _rq=new THREE.Quaternion();
+function rchLoad(){if(!RCH.on||RCH.started)return;RCH.started=1;const L=new THREE.GLTFLoader(),TL=new THREE.TextureLoader(),mats={};
+  const tex=(f,srgb)=>{const t=TL.load('lib/chars/'+f,undefined,undefined,()=>console.warn('char texture missing',f));t.flipY=false;if(srgb)t.encoding=THREE.sRGBEncoding;t.anisotropy=ANISO;return t};
+  // one material per Rocketbox material name: <name>_c.jpg colour + <name>_n.jpg normal; hair cards are alpha-tested PNGs
+  const mat=n=>{if(mats[n])return mats[n];let m;
+    if(/pistol/.test(n))m=new THREE.MeshStandardMaterial({color:0x2a2a2a,roughness:.5,metalness:.6,skinning:true});
+    else if(/opacity/.test(n))m=new THREE.MeshStandardMaterial({map:tex(n+'.png',true),alphaTest:.45,side:THREE.DoubleSide,roughness:.8,metalness:0,skinning:true});
+    else{m=new THREE.MeshStandardMaterial({map:tex(n+'_c.jpg',true),roughness:/helmet|equipment/.test(n)?.75:/head/.test(n)?.6:.86,metalness:0,skinning:true});
+      if(!/knife/.test(n))m.normalMap=tex(n+'_n.jpg')}
+    m.userData.noDet=true;m.envMapIntensity=.6;return mats[n]=m};
+  // models come as <id>.glb.js (base64 GLB in a script) so they also load from file://, where fetch() is refused
+  window.RCH_GLB=(id,b64)=>{const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    L.parse(u.buffer,'lib/chars/',gl=>{try{RCH.tpl[id]=rchTemplate(gl.scene,mat)}catch(e){console.warn('char',id,e)}rchFlush()},e=>console.warn('char',id,e))};
+  for(const kind in RCH.sets)for(const id of RCH.sets[kind]){const sc=document.createElement('script');sc.src='lib/chars/'+id+'.glb.js';sc.onerror=()=>console.warn('char missing',id);document.head.appendChild(sc)}}
+// Puts a loaded model into the rig's rest pose (facing +z, arms and legs hanging straight, joints where the rig's joints are)
+// and records each driven bone's rest rotation in model space.
+function rchTemplate(gs,mat){const root=new THREE.Group();root.add(gs);const B={};gs.traverse(o=>{if(o.isBone)B[o.name.replace(/[\s_]+/g,' ')]=o});
+  const bone=n=>{const b=B['Bip01 '+n];if(!b)throw Error('no bone '+n);return b};
+  const upd=()=>root.updateMatrixWorld(true),wp=o=>o.getWorldPosition(new THREE.Vector3()),wq=o=>o.getWorldQuaternion(new THREE.Quaternion());upd();
+  // ground: lowest point of the bind-pose body (the exported geometry is in model space, metres)
+  let ground=1e9;gs.traverse(o=>{if(o.isSkinnedMesh){o.geometry.computeBoundingBox();ground=Math.min(ground,o.geometry.boundingBox.min.y)}});
+  // face +z like the rig (toes point forward)
+  const t=wp(bone('L Toe0')).sub(wp(bone('L Foot')));gs.rotation.y=-Math.atan2(t.x,t.z);gs.position.y=-ground;upd();
+  // aim bone b so child c hangs straight below it; keep: bones whose world rotation must not change (feet stay flat)
+  const down=new THREE.Vector3(0,-1,0);
+  const hang=(b,c,keep)=>{const kq=keep.map(wq),q=wq(b).premultiply(_rq.setFromUnitVectors(wp(c).sub(wp(b)).normalize(),down));
+    b.quaternion.copy(wq(b.parent).invert().multiply(q));upd();keep.forEach((k,i)=>{k.quaternion.copy(wq(k.parent).invert().multiply(kq[i]));upd()})};
+  const S={};for(const sd of['L','R'])S[wp(bone(sd+' UpperArm')).x>0?'R':'L']=sd;   // rig armR/legR sit at +x
+  for(const k of['L','R']){const sd=S[k];hang(bone(sd+' UpperArm'),bone(sd+' Forearm'),[]);hang(bone(sd+' Forearm'),bone(sd+' Hand'),[]);
+    hang(bone(sd+' Thigh'),bone(sd+' Calf'),[bone(sd+' Foot')]);hang(bone(sd+' Calf'),bone(sd+' Foot'),[bone(sd+' Foot')])}
+  // uniform scale: hip joints at the rig's hip height. Then the joints go onto the rig's (model units = rig units / s)
+  const s=HB.hipY/wp(bone(S.R+' Thigh')).y,put=(b,v)=>{b.position.copy(b.parent.worldToLocal(v));upd()};RCH.dbg=RCH.dbg||{};
+  for(const k of['L','R']){const sd=S[k],sx=k==='R'?1:-1,ua=bone(sd+' UpperArm'),th=bone(sd+' Thigh'),sh0=wp(ua),hp0=wp(th);
+    RCH.dbg[k]=[sh0.x*s,sh0.y*s,sh0.z*s,hp0.x*s,hp0.z*s].map(v=>+v.toFixed(3));
+    put(ua,new THREE.Vector3(sx*HB.shX/s,HB.shY/s,sh0.z));put(bone(sd+' Forearm'),wp(ua).addScaledVector(down,HB.upper[2]/s));put(bone(sd+' Hand'),wp(bone(sd+' Forearm')).addScaledVector(down,HB.fore[2]/s));
+    put(th,new THREE.Vector3(sx*HB.hipX/s,HB.hipY/s,hp0.z));put(bone(sd+' Calf'),wp(th).addScaledVector(down,HB.thigh[2]/s));put(bone(sd+' Foot'),wp(bone(sd+' Calf')).addScaledVector(down,HB.shin[2]/s))}
+  // driven bones: rig part -> model bone. rest: model-space rotation in this pose; par: rest rotation of an undriven parent
+  const drv=[['armL',S.L+' UpperArm'],['armR',S.R+' UpperArm'],['legL',S.L+' Thigh'],['legR',S.R+' Thigh'],['head','Head'],
+    ['elL',S.L+' Forearm','armL'],['elR',S.R+' Forearm','armR'],['kneeL',S.L+' Calf','legL'],['kneeR',S.R+' Calf','legR']]
+    .map(([p,n,up])=>({p,up,n:bone(n).name,rest:wq(bone(n)),par:wq(bone(n).parent)}));
+  gs.traverse(o=>{if(!o.isMesh)return;const lod1=/LOD1/.test(o.name+' '+(o.parent?o.parent.name:''));o.userData.lod=lod1?1:0;
+    o.material=mat(o.material.name);o.castShadow=o.receiveShadow=true;o.visible=!lod1});
+  // head frame for kept head gear (brute helmet): model head centre, rest rotation and world scale of the head bone
+  const hb=bone('Head'),hc=wp(hb).add(new THREE.Vector3(0,.1,.02)),hs=hb.getWorldScale(new THREE.Vector3()).x;
+  const hf={q:wq(hb).invert(),p:hc.sub(wp(hb)).applyQuaternion(wq(hb).invert()).divideScalar(hs),hs};
+  return{root,s,drv,hf,head:hb.name,thighs:[bone(S.L+' Thigh').name,bone(S.R+' Thigh').name]}}
+if(RCH.on)setTimeout(rchLoad,300);
+function rchFlush(){const w=RCH.wait;RCH.wait=[];for(const[h,kind,keep]of w)rchAttach(h,kind,keep)}
+// Gives a code-built human a real body. keep: objects (with their children) that stay visible, e.g. the gun and the armbands.
+function rchAttach(h,kind,keep){if(!RCH.on)return;rchLoad();const ids=RCH.sets[kind].filter(i=>RCH.tpl[i]);
+  if(!ids.length){RCH.wait.push([h,kind,keep]);return}
+  const T=RCH.tpl[pick(ids)],r=THREE.SkeletonUtils.clone(T.root),bones={};r.scale.setScalar(T.s);r.traverse(o=>{if(o.isBone)bones[o.name]=o});
+  const inst={h,r,drv:T.drv.map(d=>Object.assign({b:bones[d.n],now:new THREE.Quaternion()},d)),head:bones[T.head],thighs:T.thighs.map(n=>bones[n]),meshes:[],lod:0,ren:null,f:-1};
+  const by={};for(const d of inst.drv)by[d.p]=d;for(const d of inst.drv)d.upD=d.up?by[d.up]:null;
+  r.traverse(o=>{if(o.isSkinnedMesh){inst.meshes.push(o);o.onBeforeRender=ren=>rchPose(inst,o,ren)}});
+  const kp=new Set();for(const k of keep||[])if(k)k.traverse(o=>kp.add(o));
+  h.g.traverse(o=>{if(o.isMesh&&!kp.has(o))o.layers.set(RCH.HIDE)});
+  // kept gear on the code head moves onto the real head bone, centred on the real head
+  const hk=(keep||[]).filter(k=>k&&k.parent===h.head);if(hk.length){const f=T.hf,hg=new THREE.Group();hg.quaternion.copy(f.q);hg.position.copy(f.p);
+    hg.scale.copy(h.head.scale).divideScalar(f.hs*T.s);for(const k of hk)hg.add(k);inst.head.add(hg)}
+  h.g.add(r);h.real=inst;return inst}
+// Copies the rig onto the bones (once per render call: the shadow pass draws first) and refreshes the skeleton being drawn.
+function rchPose(inst,mesh,ren){const f=ren.info.render.frame;
+  if(inst.ren!==ren||inst.f!==f){inst.ren=ren;inst.f=f;const h=inst.h;
+    for(const l of[h.legL,h.legR])l.userData.knee.rotation.x=.06+Math.abs(l.rotation.x)*.85;   // normally set by the (now hidden) foot mesh
+    for(const d of inst.drv){const p=d.p,a=p==='elL'?h.armL:p==='elR'?h.armR:p==='kneeL'?h.legL:p==='kneeR'?h.legR:null;
+      if(a)d.now.copy(a.quaternion).multiply(p[0]==='e'?a.userData.elbow.quaternion:a.userData.knee.quaternion);else d.now.copy(h[p].quaternion);
+      d.now.multiply(d.rest);d.b.quaternion.copy(_rq.copy(d.upD?d.upD.now:d.par).invert()).multiply(d.now)}
+    // headless zombies and crawlers: collapse the head / legs
+    inst.head.scale.setScalar(h.head.visible?1:.001);inst.thighs[0].scale.setScalar(h.legL.visible?1:.001);inst.thighs[1].scale.setScalar(h.legR.visible?1:.001);
+    if(ren===renderer){const lod=inst.r.matrixWorld.elements,dx=lod[12]-camera.position.x,dy=lod[13]-camera.position.y,dz=lod[14]-camera.position.z,l=dx*dx+dy*dy+dz*dz>RCH.lod*RCH.lod?1:0;
+      if(l!==inst.lod){inst.lod=l;for(const m of inst.meshes)m.visible=m.userData.lod===l}}
+    inst.r.updateMatrixWorld(true)}
+  const sk=mesh.skeleton;if(sk._rf!==f||sk._rr!==ren){sk._rf=f;sk._rr=ren;sk.update()}}
 function makeZombie(variant){
   const sh=variant==='brute'?bruteArmor:variant==='bomber'?bomberMat.clone():pick(MAP==='frost'?W_SHIRTS:SHIRTS),pa=pick(MAP==='frost'?W_PANTS:PANTS);
   const sleeve=Math.random()<.6?sh:zSkin,fore=sleeve===zSkin||Math.random()<.5?zSkin:sh;
-  const h=makeHuman({skin:zSkin,shirt:sh,sleeve,fore,pants:pa,shoe:Math.random()<.3?zSkin:shoeMat,headMats:zHeadMats});const{g,head,body}=h;
+  const h=makeHuman({skin:zSkin,shirt:sh,sleeve,fore,pants:pa,shoe:Math.random()<.3?zSkin:shoeMat,headMats:zHeadMats});const{g,head,body}=h;const keep=[];
   h.armL.rotation.x=-Math.PI/2;h.armR.rotation.x=-Math.PI/2;
   if(MAP==='frost'&&!variant&&Math.random()<.55){const b=new THREE.Mesh(geoRBox,pick(BEANIE));b.scale.set(.42,.2,.52);b.position.y=.22;head.add(b)}
-  if(variant==='brute'){const hm=new THREE.Mesh(geoRBox,bruteHelm);hm.scale.set(.46,.22,.56);hm.position.y=.24;head.add(hm);
-    for(const sx of[-1,1]){const pd=new THREE.Mesh(geoRBox,bruteHelm);pd.scale.set(.26,.13,.3);pd.position.set(sx*(HB.shX+.02),HB.shY+.07,0);g.add(pd)}}
+  if(variant==='brute'){const hm=new THREE.Mesh(geoRBox,bruteHelm);hm.scale.set(.46,.22,.56);hm.position.y=.24;head.add(hm);keep.push(hm);
+    for(const sx of[-1,1]){const pd=new THREE.Mesh(geoRBox,bruteHelm);pd.scale.set(.26,.13,.3);pd.position.set(sx*(HB.shX+.02),HB.shY+.07,0);g.add(pd);keep.push(pd)}}
   if(variant==='bomber'){body.scale.multiply(new THREE.Vector3(1.5,1.1,1.9));for(let i=0;i<4;i++){const b=new THREE.Mesh(geoRBox,bomberMat);b.scale.setScalar(rnd(.12,.2));b.position.set(rnd(-.3,.3),rnd(1.2,1.6),rnd(.2,.3));g.add(b)}}
+  if(RCH.on&&variant!=='bomber')rchAttach(h,'zom',keep);   // a real (zombified) body; bombers keep the swollen code body
   return h;
 }
 const spMat=lam(0x2a1a1a),spEye=new THREE.MeshBasicMaterial({color:0xff2020});
@@ -2234,6 +2317,7 @@ function makeAO(cmp){if(settings.ao===false||!THREE.DepthTexture||!THREE.ShaderP
     w.innerHTML=`<div class="row">Target frame rate <button ${B} id="fpsBtn"></button></div><div class="row">Show FPS <button ${B} id="fpsShowBtn"></button></div>
       <div class="row">Ambient occlusion <button ${B} id="aoBtn"></button></div><div class="row">Scanned textures &amp; real sky <button ${B} id="scanBtn"></button></div>
       <div class="row">Controller look speed <input type="range" id="sGp" min="0.3" max="3" step="0.05"></div>
+      <div class="row">Fullscreen <button ${B} id="fsSetBtn"></button></div>
       <div class="row">Controller invert look <button ${B} id="gpInvBtn"></button></div><div class="row">Controller vibration <button ${B} id="gpRumBtn"></button></div>`;
     box.parentNode.insertBefore(w,box);
     const FT=['auto',120,144,60,0],ftName=v=>v==='auto'?'AUTO ('+PERF.hz+' HZ DISPLAY)':v?v+' FPS':'OFF (FIXED RESOLUTION)';
@@ -2244,6 +2328,15 @@ function makeAO(cmp){if(settings.ao===false||!THREE.DepthTexture||!THREE.ShaderP
     $('scanBtn').onclick=()=>{settings.scan=settings.scan===false;saveSettings();paint();toast('Scanned textures change after a restart / reload')};$('aoBtn').onclick=()=>{settings.ao=settings.ao===false;saveSettings();paint();toast('Ambient occlusion changes after a restart / reload')};
     $('gpInvBtn').onclick=()=>{settings.gpInvert=!settings.gpInvert;saveSettings();paint()};$('gpRumBtn').onclick=()=>{settings.gpRumble=settings.gpRumble===false;saveSettings();paint()};
     $('sGp').oninput=()=>{settings.gpSens=+$('sGp').value;saveSettings()};paint();setInterval(()=>{if(!$('menuSet').classList.contains('hidden'))$('fpsBtn').textContent=ftName(settings.fpsTarget==null?'auto':settings.fpsTarget)},2000)}}
+// ---- fullscreen (browser, phones that allow it, desktop app): buttons in the Esc menu, pause menu and Settings
+const FS={ok:!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen),
+  on:()=>!!(document.fullscreenElement||document.webkitFullscreenElement)};
+function fsToggle(){if(!FS.ok){toast('Fullscreen is not supported in this browser');return}
+  try{if(FS.on())(document.exitFullscreen||document.webkitExitFullscreen).call(document);
+    else{const el=document.documentElement,r=(el.requestFullscreen||el.webkitRequestFullscreen).call(el,{navigationUI:'hide'});if(r&&r.catch)r.catch(()=>toast('Fullscreen was blocked by the browser'))}}catch(e){toast('Fullscreen was blocked by the browser')}}
+function fsPaint(){for(const b of['escFs','pFsBtn','fsSetBtn'].map(i=>$(i)).filter(Boolean)){if(!FS.ok){b.style.display='none';continue}b.textContent=b.id==='fsSetBtn'?(FS.on()?'ON':'OFF'):(FS.on()?'EXIT FULLSCREEN':'FULLSCREEN')}}
+for(const id of['escFs','pFsBtn','fsSetBtn']){const b=$(id);if(b)b.onclick=fsToggle}
+document.addEventListener('fullscreenchange',fsPaint);document.addEventListener('webkitfullscreenchange',fsPaint);fsPaint();
 // ================= game flow =================
 function lockPointer(){if(NOLOCK)return;try{const p=renderer.domElement.requestPointerLock();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
 function startGame(){
@@ -3545,7 +3638,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.17.1645';
+const GAME_VERSION=/*VER*/'2026.10.17.1717';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -3935,7 +4028,7 @@ function makeSoldier(team,kind,skinId){
     if(head.children[0]&&head.children[0].geometry===HGEO.nose)head.remove(head.children[0]);head.add(new THREE.Mesh(HGEO.eyes,RL.eyes()))}
   else{for(const x of[-.11,0,.11]){const p=new THREE.Mesh(geoRBox,dark);p.scale.set(.09,.11,.06);p.position.set(x,1.33,.19);g.add(p)}}
   const teamM=REALISM?lam(col):vest;   // the realistic look keeps the team colour on the armbands, the carrier is field-coloured
-  for(const sd of[-1,1]){const band=new THREE.Mesh(new THREE.CylinderGeometry(HB.upper[0]+.008,HB.upper[0]+.008,.05,SG(10)),teamM);band.position.y=-.1;(sd<0?h.armL:h.armR).add(band)}
+  const bands=[];for(const sd of[-1,1]){const band=new THREE.Mesh(new THREE.CylinderGeometry(HB.upper[0]+.008,HB.upper[0]+.008,.05,SG(10)),teamM);band.position.y=-.1;(sd<0?h.armL:h.armR).add(band);bands.push(band)}
   if(!REALISM){const helm=new THREE.Mesh(new THREE.SphereGeometry(1,SG(12),SG(6),0,Math.PI*2,0,Math.PI/2),camo);helm.scale.set(.25,.27,.31);helm.position.set(0,.04,-.01);head.add(helm);
     const rim=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.03,SG(12)),camo);rim.scale.set(.255,1,.315);rim.position.set(0,.045,-.01);head.add(rim)}
   // real-size weapon at low ready, stock in the right shoulder; hands solved onto the grip and the handguard
@@ -3945,6 +4038,7 @@ function makeSoldier(team,kind,skinId){
   armIK(h.armR,grip,new THREE.Vector3(.7,-1,-.3));armIK(h.armL,fore,new THREE.Vector3(-.7,-1,-.1));
   g.traverse(o=>{if(o.isMesh)o.castShadow=true});
   if(skinId)applySkinToSoldier({head,skinMat:skin,h,pc},skinId,camo,pants);
+  else if(RCH.on){for(const b of bands)b.scale.set(1.3,1,1.3);rchAttach(h,'sol',[gun,...bands])}   // a real soldier body; the armbands carry the team colour
   return Object.assign(h,{gun});
 }
 function nameTag(text,color){const t=canvasTex(128,32,g=>{g.font=SMOOTH()?'600 19px Bahnschrift, Arial, sans-serif':'bold 18px monospace';g.textAlign='center';g.fillStyle='rgba(0,0,0,.55)';g.fillRect(14,4,100,24);g.fillStyle=color;g.fillText(text,64,22)},true);
