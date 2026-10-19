@@ -1,4 +1,4 @@
-// Hotel of the Dead online hub: parties, matchmaking, private matches, and the match rooms themselves.
+// Grave Suite online hub: parties, matchmaking, private matches, and the match rooms themselves.
 // One small Node.js program, no packages needed. Runs on any host that gives it a PORT (Render, Railway, Fly, your own PC).
 //   /hub          lobby connection: who is online, parties, invites, matchmaking, private matches
 //   /room/<id>    a match (same protocol as the game's own server, so the game plays exactly the same)
@@ -315,7 +315,7 @@ const server = http.createServer((req, res) => {
   if (url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('ok'); return; }
   if (url === '/stats') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ online: onlineList().length, rooms: rooms.size, parties: parties.size, queue: queue.length })); return; }
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end('<!doctype html><title>Hotel of the Dead hub</title><body style="font-family:sans-serif;background:#0b0910;color:#eee;padding:30px"><h1>Hotel of the Dead online hub</h1><p>This is the matchmaking server. Open the game to play.</p></body>');
+  res.end('<!doctype html><title>Grave Suite hub</title><body style="font-family:sans-serif;background:#0b0910;color:#eee;padding:30px"><h1>Grave Suite online hub</h1><p>This is the matchmaking server. Open the game to play.</p></body>');
 });
 server.on('upgrade', (req, sock) => {
   const key = req.headers['sec-websocket-key']; if (!key) { sock.destroy(); return; }
@@ -328,4 +328,4 @@ server.on('upgrade', (req, sock) => {
   sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
   sock.setNoDelay(true); sock.setKeepAlive(true, 20000); target();
 });
-server.listen(PORT, () => console.log('Hotel of the Dead hub listening on port ' + PORT));
+server.listen(PORT, () => console.log('Grave Suite hub listening on port ' + PORT));

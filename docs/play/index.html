@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hotel of the Dead</title>
+<title>Grave Suite</title>
 <style>@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url(lib/PressStart2P.woff2) format('woff2')}</style>
 <style>
 :root{--red:#d2161e;--gold:#f2c14e;--ink:#f4efe6;--panel:rgba(12,10,16,.88)}
@@ -249,7 +249,7 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
 </div>
 
 <div id="title" class="overlay lobby">
-  <div id="topbar"><div class="tbLogo">HOTEL <span>OF THE DEAD</span></div><div class="tbBP">&#9670; <b id="bpAmt">0</b> BP</div>
+  <div id="topbar"><div class="tbLogo">GRAVE <span>SUITE</span></div><div class="tbBP">&#9670; <b id="bpAmt">0</b> BP</div>
     <nav id="tabs"><button data-tab="Set">SETTINGS</button><button data-tab="Shop">SHOP</button><button data-tab="Locker">LOCKER</button><button data-tab="Event">EVENT</button><button data-tab="Classes">CLASSES</button><button data-tab="Play" class="play">PLAY</button></nav></div>
   <div class="lobbyPanel">
     <div id="menuPlay" class="menu">
@@ -444,7 +444,7 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
 <script src="lib/examples/js/environments/RoomEnvironment.js"></script>
 <script>
 'use strict';
-if(!window.THREE){document.body.innerHTML='<div style="padding:40px;font-family:monospace;color:#fff">Could not load the 3D engine. Hotel of the Dead needs an internet connection the first time it loads (three.js from cdnjs).</div>';throw new Error('three missing');}
+if(!window.THREE){document.body.innerHTML='<div style="padding:40px;font-family:monospace;color:#fff">Could not load the 3D engine. Grave Suite needs an internet connection the first time it loads (three.js from cdnjs).</div>';throw new Error('three missing');}
 const $=id=>document.getElementById(id);
 // colours in this file are authored in sRGB; convert them to linear so the sRGB/ACES pipeline shows them faithfully
 {const _sh=THREE.Color.prototype.setHex;THREE.Color.prototype.setHex=function(h){_sh.call(this,h);return this.convertSRGBToLinear()}}
@@ -600,13 +600,13 @@ let diffKey='normal';try{diffKey=localStorage.getItem('hotd_diff')||'normal'}cat
 const DIFF=DIFFS[diffKey];
 
 // ================= world constants =================
-const MAPS={hotel:{name:'HOTEL OF THE DEAD',win:'HOTEL CLEANSED!',area:''},royale:{name:'CASTLE ARENA',win:'ARENA CONQUERED!',area:'Blue Field'},frost:{name:'FROSTBITE OUTPOST',win:'OUTPOST SECURED!',area:'The Courtyard'},skyline:{name:'SKYLINE',win:'SKYLINE SECURED!',area:'Plaza Tower'},manor:{name:'GRAVEYARD MANOR',win:'MANOR PURGED!',area:'The Graveyard'},refinery:{name:'DESERT REFINERY',win:'REFINERY SECURED!',area:'The Yard'},temple:{name:'JUNGLE TEMPLE',win:'TEMPLE CLEANSED!',area:'The Plaza'},nuketown:{name:'ATOM VILLAGE',win:'ATOM VILLAGE SURVIVED!',area:'The Street'},shipyard:{name:'SHIPYARD',win:'SHIPYARD SECURED!',area:'Container Yard'},oldtown:{name:'OLD TOWN',win:'OLD TOWN SAVED!',area:'Town Square'},farm:{name:'FARMSTEAD',win:'FARM SAVED!',area:'The Farmyard'},downtown:{name:'DOWNTOWN',win:'CITY SAVED!',area:'Main Street'},colosseum:{name:'GRAND COLOSSEUM',win:'ARENA HELD!',area:'The Arena Floor'}};
+const MAPS={hotel:{name:'THE GRAND HOTEL',win:'HOTEL CLEANSED!',area:''},royale:{name:'CASTLE ARENA',win:'ARENA CONQUERED!',area:'Blue Field'},frost:{name:'FROSTBITE OUTPOST',win:'OUTPOST SECURED!',area:'The Courtyard'},skyline:{name:'SKYLINE',win:'SKYLINE SECURED!',area:'Plaza Tower'},manor:{name:'GRAVEYARD MANOR',win:'MANOR PURGED!',area:'The Graveyard'},refinery:{name:'DESERT REFINERY',win:'REFINERY SECURED!',area:'The Yard'},temple:{name:'JUNGLE TEMPLE',win:'TEMPLE CLEANSED!',area:'The Plaza'},nuketown:{name:'MAPLE COURT',win:'MAPLE COURT SURVIVED!',area:'The Street'},shipyard:{name:'SHIPYARD',win:'SHIPYARD SECURED!',area:'Container Yard'},oldtown:{name:'OLD TOWN',win:'OLD TOWN SAVED!',area:'Town Square'},farm:{name:'FARMSTEAD',win:'FARM SAVED!',area:'The Farmyard'},downtown:{name:'DOWNTOWN',win:'CITY SAVED!',area:'Main Street'},colosseum:{name:'GRAND COLOSSEUM',win:'ARENA HELD!',area:'The Arena Floor'}};
 let MAP=new URLSearchParams(location.search).get('map');
 if(!MAPS[MAP]){try{MAP=localStorage.getItem('hotd_map')}catch(e){}}
 if(!MAPS[MAP])MAP='hotel';
 const MODE=new URLSearchParams(location.search).get('mode')==='mp'?'mp':'zm';if(MODE==='mp'&&MAP==='hotel')MAP='royale';if(MODE==='zm'&&MAP==='colosseum')MAP='royale';
 const MPM=MODE==='mp';
-// water is shallow enough to wade through, except the King's Arena river in Zombies (its bridges are bought)
+// water is shallow enough to wade through, except the Castle Arena river in Zombies (its bridges are bought)
 const WADE=!(MAP==='royale'&&!MPM);
 const OPEN=MAP!=='hotel';
 try{best=+localStorage.getItem('hotd_best_'+MAP)||(MAP==='hotel'?+localStorage.getItem('hotd_best')||0:0)}catch(e){}
@@ -1702,7 +1702,7 @@ function spawnZombie(type){
 function spawnBoss(){
   const m=makeBoss();boss={type:'boss',mesh:m.g,parts:m,x:BOSS_POS[0],z:BOSS_POS[1],f:BOSS_F,hp:40000+R.n*3000,yaw:Math.PI,dead:false,atkCD:2,spitT:4,lungeT:9,summonT:12,state:'walk',st:0,phase:0,yOff:0,lungeHit:false,stuck:0};
   boss.nid=++ZC.nid;boss.maxHp=boss.hp;boss.mesh.position.set(boss.x,surf(BOSS_F),boss.z);scene.add(boss.mesh);enemies.push(boss);bossSpawned=true;
-  SFX.roar();showMsg('THE BROODMOTHER AWAKENS',{hotel:'Kill her to cleanse the hotel',royale:'Kill her to conquer the arena',frost:'Kill her to secure the outpost',skyline:'Kill her to secure the skyline',manor:'Kill her to purge the manor',refinery:'Kill her to secure the refinery',temple:'Kill her to cleanse the temple',nuketown:'Kill her to save Atom Village',shipyard:'Kill her to secure the shipyard',oldtown:'Kill her to save the town',farm:'Kill her to save the farm',downtown:'Kill her to save the city'}[MAP],4);
+  SFX.roar();showMsg('THE BROODMOTHER AWAKENS',{hotel:'Kill her to cleanse the hotel',royale:'Kill her to conquer the arena',frost:'Kill her to secure the outpost',skyline:'Kill her to secure the skyline',manor:'Kill her to purge the manor',refinery:'Kill her to secure the refinery',temple:'Kill her to cleanse the temple',nuketown:'Kill her to save Maple Court',shipyard:'Kill her to secure the shipyard',oldtown:'Kill her to save the town',farm:'Kill her to save the farm',downtown:'Kill her to save the city'}[MAP],4);
 }
 function killEnemy(e,head,src){
   if(e.type==='net'){netHit(e,150,head,src);return}
@@ -2484,7 +2484,7 @@ function startGame(){
   $('title').classList.add('hidden');$('hud').classList.remove('hidden');
   if(MAP==='skyline'){P.x=31.5;P.z=36.5;P.y=surf(0);P.yaw=0}else if(MAP==='frost'){P.x=36.5;P.z=29;P.y=surf(0);P.yaw=0}else if(GEN[MAP]){P.x=GEN[MAP].start[0];P.z=GEN[MAP].start[1];P.y=surf(0);P.yaw=0}else if(OPEN){P.x=24;P.z=47;P.y=surf(0);P.yaw=0}
   state='play';giveGun('pistol');P.swapT=0;setFloorLights(0);computeFlow(0);renderPerks();{const sq=+URLQ.get('squad')||0;if(sq>0&&!ZC.on&&OPEN)startSquad(Math.min(5,sq))}
-  showMsg(MAPS[MAP].name,{hotel:'Survive. Climb. Kill the Broodmother.',royale:'Hold the blue side. Cross the river. Kill the Broodmother.',frost:'Hold the outpost. Break into the hangar. Kill the Broodmother.',skyline:'Hold the plaza. Cross the sky bridges. Kill the Broodmother.',manor:'Hold the graveyard. Break into the manor house. Kill the Broodmother.',refinery:'Hold the yard. Break into the cracking unit. Kill the Broodmother.',temple:'Hold the plaza. Open the Great Pyramid. Kill the Broodmother.',nuketown:'Hold the street. Open the houses. Break into the fallout shelter.',shipyard:'Hold the container yard. Open the dry dock. Kill the Broodmother.',oldtown:'Hold the square. Open the old church. Kill the Broodmother.',farm:'Hold the farmyard. Open the big red barn. Kill the Broodmother.',downtown:'Hold Main Street. Break into the bank. Kill the Broodmother.'}[MAP],3.5);
+  showMsg(MAPS[MAP].name,{hotel:'Survive. Climb. Kill the Broodmother.',royale:'Hold the blue side. Cross the river. Kill the Broodmother.',frost:'Hold the outpost. Break into the hangar. Kill the Broodmother.',skyline:'Hold the plaza. Cross the sky bridges. Kill the Broodmother.',manor:'Hold the graveyard. Break into the manor house. Kill the Broodmother.',refinery:'Hold the yard. Break into the cracking unit. Kill the Broodmother.',temple:'Hold the plaza. Open the Great Pyramid. Kill the Broodmother.',nuketown:'Hold the street. Open the houses. Break into the storm cellar.',shipyard:'Hold the container yard. Open the dry dock. Kill the Broodmother.',oldtown:'Hold the square. Open the old church. Kill the Broodmother.',farm:'Hold the farmyard. Open the big red barn. Kill the Broodmother.',downtown:'Hold Main Street. Break into the bank. Kill the Broodmother.'}[MAP],3.5);
   lockPointer();
 }
 function pause(){if(state!=='play')return;renderPauseInvite();P.trigger=false;P.ads=false;for(const k in keys)keys[k]=false;
@@ -2565,7 +2565,7 @@ function unlockZone(zn){
   showMsg(zn.name.toUpperCase(),zn.boss?'Something stirs in the nest...':'Area opened',2.5);
   if(zn.boss&&!bossSpawned&&(!ZC.on||isHost()))later(2.5,spawnBoss);
 }
-// ================= King's Arena (3D royale-style arena) =================
+// ================= Castle Arena: two castles facing each other across a river, keeps and watchtowers =================
 const ITEM_DEFS_ROYALE=[
   {f:0,kind:'wall',gun:'smg',x:8,z:58,face:'N'},
   {f:0,kind:'wall',gun:'shotgun',x:40,z:58,face:'N'},
@@ -2651,7 +2651,7 @@ function buildRoyale(){
   for(const[z,c]of[[58,BLUE],[13,RED]])for(const x of[21,26]){fb(x+.5,S+1.6,z+.5,1.2,3.2,1.2,STONE2);fb(x+.5,S+3.4,z+.5,1.4,.4,1.4,c);fb(x+.5,S+2.1,z+(z===58?-.12:1.12),.8,1.2,.04,c)}
   // ---- towers
   const banner=(team)=>canvasTex(32,48,gx=>{gx.fillStyle=team==='blue'?'#2a5ac8':'#c8302a';gx.fillRect(0,0,32,48);gx.fillStyle='#f2c14e';gx.fillRect(0,0,32,3);gx.fillRect(0,45,32,3);
-    gx.beginPath();gx.moveTo(8,30);gx.lineTo(8,18);gx.lineTo(12,24);gx.lineTo(16,14);gx.lineTo(20,24);gx.lineTo(24,18);gx.lineTo(24,30);gx.closePath();gx.fill()},false);
+    gx.beginPath();gx.moveTo(8,13);gx.lineTo(24,13);gx.lineTo(24,26);gx.quadraticCurveTo(24,36,16,40);gx.quadraticCurveTo(8,36,8,26);gx.closePath();gx.fill();gx.fillStyle=team==='blue'?'#2a5ac8':'#c8302a';gx.fillRect(15,16,2,20);gx.fillRect(10,22,12,2)},false);
   const BAN={blue:new THREE.MeshStandardMaterial({map:banner('blue'),flatShading:!SMOOTH()}),red:new THREE.MeshStandardMaterial({map:banner('red'),flatShading:!SMOOTH()})};
   const tower=(x0,z0,n,team,king)=>{mark(x0,z0,x0+n-1,z0+n-1,T.HOUSE);const cx=x0+n/2,cz=z0+n/2,r=n*.55,h=king?6:4.5,tc=team==='blue'?BLUE:RED,face=team==='blue'?-1:1;
     const base=new THREE.Mesh(new THREE.CylinderGeometry(r*.92,r*1.04,h,SG(8)),LP(STONE));base.position.set(cx,S+h/2,cz);grp.add(base);
@@ -2662,13 +2662,11 @@ function buildRoyale(){
     fb(cx,S+1.1,cz+face*(r*.9),1.3,2.2,.3,0x3a2a1a);fb(cx,S+2.3,cz+face*(r*.92),1.5,.25,.3,STONE2);
     for(const sx of[-1,1]){const bn=new THREE.Mesh(geoPlane,BAN[team]);bn.scale.set(1,1.5,1);bn.position.set(cx+sx*r*.62,S+h*.62,cz+face*(r*.8+.02));bn.rotation.y=face>0?0:Math.PI;bn.rotation.y+=sx*face*.4;grp.add(bn)}
     if(!king){const roof=new THREE.Mesh(new THREE.ConeGeometry(r*.8,2.2,SG(8)),LP(tc));roof.position.set(cx,S+h+1.7,cz);grp.add(roof);
-      const can=new THREE.Mesh(new THREE.CylinderGeometry(.22,.28,1.6,SG(8)),LP(0x3a3a3a));can.rotation.x=Math.PI/2;can.position.set(cx,S+h+.95,cz+face*r*.9);grp.add(can);
       fb(cx,S+h+3,cz,.08,1.2,.08,0x5a4a3a);fb(cx,S+h+3.3,cz+.35,.04,.5,.7,tc)}
     else{const hut=new THREE.Mesh(new THREE.CylinderGeometry(r*.55,r*.6,1.6,SG(8)),LP(0xc8c0b0));hut.position.set(cx,S+h+1.4,cz);grp.add(hut);
       const roof=new THREE.Mesh(new THREE.ConeGeometry(r*.75,2.4,SG(8)),LP(tc));roof.position.set(cx,S+h+3.4,cz);grp.add(roof);
-      for(let i=0;i<5;i++){const a=i/5*Math.PI*2;fb(cx+Math.cos(a)*.35,S+h+4.9,cz+Math.sin(a)*.35,.18,.5,.18,GOLD)}fb(cx,S+h+4.65,cz,.9,.2,.9,GOLD);
-      for(const sx of[-1,1]){fb(cx+sx*r*1.05,S+h+2,cz,.1,3,.1,0x5a4a3a);fb(cx+sx*r*1.05,S+h+3.1,cz+face*.5,.05,.8,1,tc)}
-      const can=new THREE.Mesh(new THREE.CylinderGeometry(.3,.38,2,SG(8)),LP(0x3a3a3a));can.rotation.x=Math.PI/2;can.position.set(cx,S+h+.95,cz+face*r*1.0);grp.add(can)}};
+      fb(cx,S+h+5.2,cz,.08,1.6,.08,0x5a4a3a);fb(cx,S+h+5.6,cz+.4,.04,.6,.8,tc);
+      for(const sx of[-1,1]){fb(cx+sx*r*1.05,S+h+2,cz,.1,3,.1,0x5a4a3a);fb(cx+sx*r*1.05,S+h+3.1,cz+face*.5,.05,.8,1,tc)}}};
   tower(10,48,4,'blue');tower(34,48,4,'blue');tower(21,63,6,'blue',true);
   tower(10,20,4,'red');tower(34,20,4,'red');tower(21,3,6,'red',true);
   // ---- props
@@ -3425,9 +3423,9 @@ Object.assign(ITEM_DEFS_GEN,{
     {f:0,kind:'box',x:8,z:49,face:'N'},{f:0,kind:'wall',gun:'sniper',x:6,z:45,face:'E'},{f:0,kind:'wall',gun:'m16',x:15,z:51,face:'N'},
     {f:0,kind:'pap',x:53,z:49,face:'N'},{f:0,kind:'mod',x:53,z:42,face:'E'},{f:0,kind:'perk',perk:'swift',x:60,z:42,face:'W'},{f:0,kind:'perk',perk:'phoenix',x:56,z:45,face:'E'}]});
 Object.assign(GEN_BUILD,{
-// ---------------- NUKETOWN: two family houses facing each other across a cul-de-sac on a nuclear test site (built from the public layout)
+// ---------------- MAPLE COURT: a blue house and a red house on a quiet cul-de-sac at the edge of the desert, with garages, back yards and a storm cellar
 nuketown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=K;const tk=makeTownKit(K.grp,K.g,S,LP);
-  const GREEN=0x6aa06a,YELLOW=0xe0c050,TRIM=0xf2f0ea,ROOF=0x4a3a36,CONC=0x9a9a94;
+  const GREEN=0x7a90a8,YELLOW=0xb0563e,TRIM=0xf2f0ea,ROOF=0x4a3a36,CONC=0x9a9a94;
   TOWN.perimeter(K,T.FENCE,0);
   // test-site boundary: chain link with warning signs, desert and mountains beyond
   const mesh=new THREE.MeshStandardMaterial({color:0x9a9c9a,transparent:true,opacity:.45,metalness:.5,roughness:.5,side:THREE.DoubleSide});
@@ -3435,39 +3433,38 @@ nuketown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
     for(let i=0;i<len;i+=3)fb(alongX?x0+i+.5:x0+.5,S+1.5,alongX?z0+.5:z0+i+.5,.08,3,.08,0x8a8a84);fb((x0+x1+1)/2,S+1.4,(z0+z1+1)/2,alongX?len:.03,2.7,alongX?.03:len,mesh)}
   TOWN.mountains(K,[0xa87a5a,0x9a6a4a,0xb8906a],14,110);
   for(let i=0;i<30;i++){let x,z;do{x=rnd(-60,W+60);z=rnd(-50,D+50)}while(x>-4&&x<W+4&&z>-4&&z<D+4);const r=new THREE.Mesh(new THREE.IcosahedronGeometry(rnd(.6,1.6),0),LP(pick([0x8a7a64,0x9a8a70])));r.position.set(x,S,z);r.scale.y=.6;K.grp.add(r)}
-  // distant test tower and mannequin bleachers
-  for(const[x,z]of[[-30,-25],[W+28,D+20]]){fb(x,S+12,z,.5,24,.5,0x6a6a6a);fb(x+3,S+12,z,.5,24,.5,0x6a6a6a);fb(x+1.5,S+24.5,z,4,2,3,0x8a8a84)}
-  // ---- GREEN HOUSE (north side, faces the street)
+  // a water tower beyond the fence
+  {const x=-26,z=-22;for(const[dx,dz]of[[-1.5,-1.5],[1.5,-1.5],[-1.5,1.5],[1.5,1.5]])fb(x+dx,S+7,z+dz,.3,14,.3,0x7a6a5a);const tnk=new THREE.Mesh(new THREE.CylinderGeometry(3,3,4,SG(14)),LP(0xd8d2c4));tnk.position.set(x,S+16,z);K.grp.add(tnk);const cap=new THREE.Mesh(new THREE.ConeGeometry(3.2,1.6,SG(14)),LP(0x8a4a3a));cap.position.set(x,S+18.8,z);K.grp.add(cap)}
+  // ---- BLUE HOUSE (north side, faces the street)
   tk.house({r:[16,8,32,19],h:6,wall:GREEN,roof:ROOF,floor:0x7a5a3a,inner:0xe8dcc0,pitch:1.6,
     doors:[[27,19],[28,19],[30,8]],windows:[[25,19],[31,19],[32,14],[26,8]],upWindows:[[19,19],[21,19],[16,12],[16,15]],
     up:{r:[17,9,23,18],h:2.8,stairs:[[28,9,.5],[27,9,1],[26,9,1.5],[25,9,2],[24,9,2.4]],beds:[[18,10],[19,10],[21,16],[22,16]],rails:[[24,10,24,19]]},
-    props:[['couch',24,16,25,16],['table',25,12,26,13],['fridge',31,11,31,11],['stove',31,12,31,12]],zone:['green','Green House',750],Z});
+    props:[['couch',24,16,25,16],['table',25,12,26,13],['fridge',31,11,31,11],['stove',31,12,31,12]],zone:['green','Blue House',750],Z});
   for(const x of[22,30])fb(x+.5,S+6.3,13,.9,2.2,.9,0x8a5a4a);
   fb(27.5+.5,S+2.6,20.1,3,.15,1.4,TRIM);for(const x of[26.3,29.7])fb(x,S+1.3,20.6,.12,2.6,.12,TRIM);mark(26,20,26,20,T.PILLAR);mark(29,20,29,20,T.PILLAR);
-  // ---- GREEN GARAGE
+  // ---- BLUE GARAGE
   tk.house({r:[34,10,41,19],h:3.6,wall:GREEN,roof:ROOF,floor:0x6a6a66,doors:[[36,19],[37,19],[38,19],[39,19]],windows:[],
-    props:[['pallets',35,17,35,18],['shelf',40,11,40,12]],zone:['ggarage','Green Garage',1250],Z});
-  // ---- YELLOW HOUSE (south side, faces the street)
+    props:[['pallets',35,17,35,18],['shelf',40,11,40,12]],zone:['ggarage','Blue Garage',1250],Z});
+  // ---- RED HOUSE (south side, faces the street)
   tk.house({r:[40,36,56,47],h:6,wall:YELLOW,roof:ROOF,floor:0x7a5a3a,inner:0xe8dcc0,pitch:1.6,
     doors:[[47,36],[48,36],[42,47]],windows:[[43,36],[40,41],[43,47]],upWindows:[[52,36],[54,36],[56,40],[56,43]],
     up:{r:[50,37,55,46],h:2.8,stairs:[[45,46,.5],[46,46,1],[47,46,1.5],[48,46,2],[49,46,2.4]],beds:[[54,38],[54,39],[51,44],[52,44]],rails:[[50,37,50,46]]},
-    props:[['couch',43,41,43,42],['table',45,40,46,41],['fridge',49,44,49,44],['stove',49,43,49,43]],zone:['yellow','Yellow House',1000],Z});
+    props:[['couch',43,41,43,42],['table',45,40,46,41],['fridge',49,44,49,44],['stove',49,43,49,43]],zone:['yellow','Red House',1000],Z});
   for(const x of[43,51])fb(x+.5,S+6.3,42,.9,2.2,.9,0x8a5a4a);
   fb(48,S+2.6,35.4,3,.15,1.4,TRIM);for(const x of[46.3,49.7])fb(x,S+1.3,34.9,.12,2.6,.12,TRIM);mark(46,34,46,34,T.PILLAR);mark(49,34,49,34,T.PILLAR);
-  // ---- YELLOW GARAGE
+  // ---- RED GARAGE
   tk.house({r:[31,36,38,45],h:3.6,wall:YELLOW,roof:ROOF,floor:0x6a6a66,doors:[[33,36],[34,36],[35,36],[36,36]],windows:[],
-    props:[['crates',34,44,35,44]],zone:['ygarage','Yellow Garage',1500],Z});
-  // ---- FALLOUT SHELTER (east end of the street)
+    props:[['crates',34,44,35,44]],zone:['ygarage','Red Garage',1500],Z});
+  // ---- STORM CELLAR (east end of the street)
   tk.house({r:[59,19,69,36],h:4.2,wall:CONC,roof:0x6a6a64,floor:0x5a5a56,doors:[[59,26],[59,27],[59,28],[59,29]],windows:[],
-    props:[['shelf',60,20,62,20],['shelf',60,35,62,35],['crates',67,20,68,21],['crates',67,34,68,35]],zone:['shelter','Fallout Shelter',2500],boss:true,Z});
-  TOWN.sign(K,58.9,27.9,-Math.PI/2,3.2,1.1,3.4,g=>{g.fillStyle='#e8c020';g.fillRect(0,0,256,88);g.fillStyle='#111';g.beginPath();g.arc(40,44,30,0,7);g.fill();g.fillStyle='#e8c020';
-    for(let i=0;i<3;i++){g.beginPath();g.moveTo(40,44);g.arc(40,44,26,i*2.09-.5,i*2.09+.5);g.fill()}g.fillStyle='#111';g.beginPath();g.arc(40,44,6,0,7);g.fill();g.font='bold 30px sans-serif';g.fillText('FALLOUT',84,42);g.fillText('SHELTER',84,74)});
-  // ---- the street: school bus in the middle, trucks, a car, mailboxes, lamps
-  mark(32,26,40,28,T.CAR);hset(32,26,40,28,2.8);{const o=new THREE.Group();o.position.set(36.5,S,27.5);o.rotation.y=.04;K.grp.add(o);const BUS=0xe8a818,glass=new THREE.MeshStandardMaterial({color:0x223040,roughness:.1,metalness:.6});
-    fb(0,1.45,0,8.8,2.1,2.5,BUS,o);fb(4.75,1,0,.9,1.2,2.4,BUS,o);fb(0,.62,0,8.9,.14,2.55,0x1a1a1a,o);fb(0,1.25,0,8.85,.1,2.56,0x1a1a1a,o);
+    props:[['shelf',60,20,62,20],['shelf',60,35,62,35],['crates',67,20,68,21],['crates',67,34,68,35]],zone:['shelter','Storm Cellar',2500],boss:true,Z});
+  TOWN.sign(K,58.9,27.9,-Math.PI/2,3.2,1.1,3.4,g=>{g.fillStyle='#2a3a4a';g.fillRect(0,0,256,88);g.strokeStyle='#e8e2d4';g.lineWidth=5;g.strokeRect(5,5,246,78);g.fillStyle='#f2c14e';g.beginPath();g.moveTo(46,12);g.lineTo(28,48);g.lineTo(42,48);g.lineTo(32,78);g.lineTo(58,38);g.lineTo(44,38);g.lineTo(54,12);g.closePath();g.fill();g.fillStyle='#e8e2d4';g.font='bold 30px sans-serif';g.fillText('STORM',84,42);g.fillText('CELLAR',84,74)});
+  // ---- the street: a camper van in the middle, trucks, a car, mailboxes, lamps
+  mark(32,26,40,28,T.CAR);hset(32,26,40,28,2.8);{const o=new THREE.Group();o.position.set(36.5,S,27.5);o.rotation.y=.04;K.grp.add(o);const BUS=0xe8e2d4,glass=new THREE.MeshStandardMaterial({color:0x223040,roughness:.1,metalness:.6});
+    fb(0,1.45,0,8.8,2.1,2.5,BUS,o);fb(4.75,1,0,.9,1.2,2.4,BUS,o);fb(0,.62,0,8.9,.14,2.55,0x1a1a1a,o);fb(0,1.25,0,8.85,.22,2.56,0x8a5a3a,o);
     for(let i=-3.4;i<=3.4;i+=1.1)for(const s of[-1,1])fb(i,1.95,s*1.26,.9,.62,.04,glass,o);fb(4.42,1.95,0,.05,.7,2.2,glass,o);
     for(const sx of[-3,3.2])for(const s of[-1,1]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.35,SG(10)),LP(0x1a1a1a));w.rotation.x=Math.PI/2;w.position.set(sx,.5,s*1.2);o.add(w)}
-    fb(-4.42,1.8,0,.05,.3,2.3,0x1a1a1a,o);const st=fb(4.2,1.4,1.4,.05,.5,.5,0xc02020,o)}
+    fb(-4.42,1.8,0,.05,.3,2.3,0x1a1a1a,o)}
   TOWN.truck(K,47,11,false,0x3a5a8a);TOWN.truck(K,22,39,false,0x9a3a2a);TOWN.truck(K,8,38,true,0x5a7a5a);
   for(const[x,z,c]of[[26,23,GREEN],[45,32,YELLOW]]){mark(x,z,x,z,T.DESK);setH(0,x,z,1.15);fb(x+.5,S+.55,z+.5,.08,1.1,.08,0x4a4a4a);fb(x+.5,S+1.2,z+.5,.3,.3,.5,c)}
   for(const[x,z]of[[14,23],[30,32],[42,23],[54,32],[60,23],[60,32],[20,32],[48,23]])lamp(x+.5,z+.5,4,0x3a3a3a,0xfff4d0);
@@ -3481,14 +3478,13 @@ nuketown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
   // yellow back yard: pool (shallow) and a shed
   mark(44,50,49,52,T.WATER);fb(47,S+.03,51.5,6,.04,3,new THREE.MeshStandardMaterial({color:0x4ac0e0,transparent:true,opacity:.8,roughness:.05}));box(43,49,50,49,0,.12,0xe8e4dc);box(43,53,50,53,0,.12,0xe8e4dc);
   mark(53,50,56,53,T.HOUSE);box(53,50,56,53,0,2.6,0xb8a888);box(53,50,56,53,2.6,.2,ROOF).scale.set(4.4,.2,4.4);
-  // mannequins, trees, hedges, crates
-  for(const[x,z,ry]of[[20,25,.4],[14,30,2],[45,31,3],[52,24,-1],[26,34,1.2],[10,45,0],[62,45,2.5],[57,12,.8],[25,5,1],[50,49,2.2],[36,22,3],[12,33,1.5]])TOWN.mannequin(K,x,z,ry);
+  // trees, hedges, crates
   for(const[x,z]of[[4,4],[67,4],[4,51],[67,51],[11,13],[11,48],[61,51],[27,51],[45,4],[63,7],[3,16],[3,40]])TOWN.tree(K,x,z,rnd(.9,1.2));
   for(const[x,z]of[[44,6],[45,6],[66,12],[18,49],[19,49]])crate(x,z,1+(Math.random()<.4));
   for(const[x,z]of[[56,14.5],[28.5,49.5],[6.5,9.5]])barrel(x,z,0x3a5a3a);
   // welcome sign at the cul-de-sac
   mark(2,25,2,30,T.HOUSE);box(2,25,2,30,0,.6,0x8a7a64);for(const z of[25.4,30.6])fb(2.5,S+1.4,z,.15,2.8,.15,0x5a4a3a);
-  TOWN.sign(K,3.1,27.5,Math.PI/2,5.4,2,2.2,g=>{g.fillStyle='#f2ead8';g.fillRect(0,0,256,95);g.strokeStyle='#c03020';g.lineWidth=6;g.strokeRect(5,5,246,85);g.fillStyle='#c03020';g.font='bold 20px sans-serif';g.textAlign='center';g.fillText('WELCOME TO',128,32);g.font='bold 40px sans-serif';g.fillText('ATOM VILLAGE',128,72);g.fillStyle='#3a3a3a';g.font='12px sans-serif';g.fillText('POPULATION: 0',128,88)});
+  TOWN.sign(K,3.1,27.5,Math.PI/2,5.4,2,2.2,g=>{g.fillStyle='#f2ead8';g.fillRect(0,0,256,95);g.strokeStyle='#c03020';g.lineWidth=6;g.strokeRect(5,5,246,85);g.fillStyle='#c03020';g.font='bold 20px sans-serif';g.textAlign='center';g.fillText('WELCOME TO',128,32);g.font='bold 40px sans-serif';g.fillText('MAPLE COURT',128,72);g.fillStyle='#3a3a3a';g.font='12px sans-serif';g.fillText('POPULATION: 0',128,88)});
 },
 // ---------------- SHIPYARD: a container port at dusk with warehouses, a dock office, a customs house and a dry dock
 shipyard(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=K;const tk=makeTownKit(K.grp,K.g,S,LP);
@@ -3776,7 +3772,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.19.1647';
+const GAME_VERSION=/*VER*/'2026.10.19.1714';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -4623,7 +4619,7 @@ function renderZm(){pills($('mapPick'),Object.keys(MAPS).filter(k=>k!=='colosseu
   $('mapDesc').textContent=MAP_INFO[zmMap].desc;$('tips').innerHTML=MAP_INFO[zmMap].tips.map(t=>`<li>${t}</li>`).join('');
   let b=0;try{b=+localStorage.getItem('hotd_best_'+zmMap)||0}catch(e){}$('best').textContent=b?'Best round on this map: '+b:''}
 function renderMp(){
-  pills($('mpMapPick'),[['royale','CASTLE ARENA'],['frost','FROSTBITE OUTPOST'],['skyline','SKYLINE'],['manor','GRAVEYARD MANOR'],['refinery','DESERT REFINERY'],['temple','JUNGLE TEMPLE'],['nuketown','ATOM VILLAGE'],['shipyard','SHIPYARD'],['oldtown','OLD TOWN']].concat(typeof EXTRA_MP_MAPS!=='undefined'?EXTRA_MP_MAPS:[]),MPC.map,id=>{MPC.map=id;saveMPC();if(id!==MAP||MODE!=='mp')goURL({map:id,mode:'mp',menu:'Mp'});else renderMp()});
+  pills($('mpMapPick'),[['royale','CASTLE ARENA'],['frost','FROSTBITE OUTPOST'],['skyline','SKYLINE'],['manor','GRAVEYARD MANOR'],['refinery','DESERT REFINERY'],['temple','JUNGLE TEMPLE'],['nuketown','MAPLE COURT'],['shipyard','SHIPYARD'],['oldtown','OLD TOWN']].concat(typeof EXTRA_MP_MAPS!=='undefined'?EXTRA_MP_MAPS:[]),MPC.map,id=>{MPC.map=id;saveMPC();if(id!==MAP||MODE!=='mp')goURL({map:id,mode:'mp',menu:'Mp'});else renderMp()});
   pills($('mpModePick'),[['tdm','TEAM DEATHMATCH'],['ffa','FREE-FOR-ALL'],['snd','SEARCH & DESTROY'],['zm','CO-OP ZOMBIES']],MPC.gametype,id=>{MPC.gametype=id;saveMPC();renderMp()});
   pills($('mpSkillPick'),Object.keys(SKILLS).map(k=>[k,SKILLS[k].name.toUpperCase()]),MPC.skill,id=>{MPC.skill=id;saveMPC();renderMp()});
   pills($('mpClassPick'),CLASSES.map((c,i)=>[i,c.name]),MPC.cls,i=>{MPC.cls=i;saveMPC();renderMp()});
@@ -4655,7 +4651,7 @@ function renderCAC(){const c=CLASSES[cacSel];
   $('cacStats').innerHTML='<div class="lbl">Stats</div>'+bar('Damage',mpDamage(d,0)/115)+bar('Fire rate',d.rpm/1100)+bar('Range',k.range*(d.rangeMul||1)/110)+bar('Accuracy',1-Math.min(1,d.spread*9))+bar('Control',1-.6*(d.recoilMul||1)+.2)+bar('Mobility',(k.mob*(d.mobMul||1)-.8)/.35)+bar('ADS speed',(d.adsMul||1)/1.6)+bar('Reload speed',1-d.reload/5)+`<p style="font-size:9px">${realSpecs(c.primary)?'Real: '+realSpecs(c.primary)+'<br>':''}Magazine: ${d.mag} rounds${d.quiet?' &middot; stays off enemy radar':''}${d.hideFlash?' &middot; no muzzle flash':''}</p>`}
 $('gsClose').onclick=closeGunsmith;$('gsEquip').onclick=gsEquip;$('wpClose').onclick=closeWeaponPicker;
 $('mpPlayBtn').onclick=()=>{if(MPC.gametype==='zm'){goURL({map:MPC.map,mode:'zm',autostart:'zm',squad:Math.min(5,MPC.bots)});return}if(MODE==='mp'&&MAP===MPC.map)startMP();else goURL({map:MPC.map,mode:'mp',autostart:'mp'})};
-function initMenus(){renderZm();renderMp();showMenu(URLQ.get('menu')||'Main');hubConnect();{const vn=document.createElement('p');vn.className='note';vn.textContent='Version '+GAME_VERSION;$('menuPlay').appendChild(vn)}
+function initMenus(){renderZm();renderMp();showMenu(URLQ.get('menu')||'Main');hubConnect();{const vn=document.createElement('p');vn.className='note';vn.innerHTML='Version '+GAME_VERSION+' &middot; three.js (MIT), Rocketbox avatars (MIT), Poly Haven (CC0), Press Start 2P (OFL) &middot; <a href="https://kboss1421.github.io/hotel-of-the-dead/privacy.html" target="_blank" rel="noopener" style="color:#7fd0ff">Privacy</a>';$('menuPlay').appendChild(vn)}
   $('netName').onchange=()=>{netName=($('netName').value.trim()||netName).replace(/[^A-Za-z0-9 _-]/g,'').slice(0,14)||'Player';try{localStorage.setItem('hotd_name',netName)}catch(e){}hubSend({t:'name',name:netName})};
   const au=URLQ.get('autostart');if(au){$('title').classList.add('hidden');$('deploy').classList.remove('hidden');
     $('deployInfo').textContent=au==='online'?`Online match on ${MAPS[MAP].name} (${netServer})`:au==='mp'?`${MPC.gametype==='ffa'?'Free-for-all':MPC.gametype==='snd'?'Search and Destroy':'Team Deathmatch'} on ${MAPS[MAP].name}`:`Zombies on ${MAPS[MAP].name}${+URLQ.get('squad')?' with '+URLQ.get('squad')+' AI squadmates':''}`;
@@ -4765,7 +4761,7 @@ function netConnect(onWelcome){
   if(!netServer){netStatus('Enter the server address first, e.g. localhost:8080',true);return}
   const list=netCandidates(netServer);let i=0;
   const tryNext=()=>{
-    if(i>=list.length){NET.ws=null;netStatus(`Nothing answered at ${netServer}. Start the server first (desktop shortcut "Hotel of the Dead Server"), wait for its window to say it is running, then try again.`,true);return}
+    if(i>=list.length){NET.ws=null;netStatus(`Nothing answered at ${netServer}. Start the server first (HOST in the desktop app, or Start Server.bat), wait for it to say it is running, then try again.`,true);return}
     const addr=list[i++];let ws,done=false;
     try{ws=new WebSocket(/^wss?:\/\//i.test(addr)?addr:(location.protocol==='https:'?'wss://':'ws://')+addr+'/ws')}catch(e){tryNext();return}
     netStatus('Connecting to '+addr+' ...');NET.ws=ws;
@@ -5048,14 +5044,14 @@ function decodeInvite(code){let c=String(code||'').toUpperCase().trim().replace(
   if(c.length!==10)return null;let n=0;for(const ch of c){const v=INV_AB.indexOf(ch);if(v<0)return null;n=n*32+v}
   const port=n%65536;n=Math.floor(n/65536);const ip=[Math.floor(n/16777216)%256,Math.floor(n/65536)%256,Math.floor(n/256)%256,n%256];return port?ip.join('.')+':'+port:null}
 function copyText(t){if(window.hotd)return window.hotd.copy(t);try{return navigator.clipboard.writeText(t)}catch(e){}}
-const inviteMessage=code=>`Join my Hotel of the Dead game!\nInvite code: ${code}\nClick to join: hotd://join/${code}\n(or in the game: ONLINE, paste the code, JOIN SERVER)`;
+const inviteMessage=code=>`Join my Grave Suite game!\nInvite code: ${code}\nClick to join: hotd://join/${code}\n(or in the game: ONLINE, paste the code, JOIN SERVER)`;
 // the code for the game you are in right now (your hosted game, or the server you joined)
 async function currentInvite(){if(window.hotd){const h=await window.hotd.hostInfo();if(h&&(/^(127\.0\.0\.1|localhost):/.test(netServer)||!NET.on))return inviteCode((h.ips[0]||'127.0.0.1')+':'+h.port)}
   return inviteCode(netServer)}
 const HOSTC=Object.assign({map:'royale',mode:'tdm',bots:1},(()=>{try{return JSON.parse(localStorage.getItem('hotd_hostc'))||{}}catch(e){return{}}})());
 const MODE_NAMES={tdm:'Team Deathmatch',ffa:'Free-for-all',zm:'Co-op Zombies',snd:'Search and Destroy'};
 function renderHost(){if(!window.hotd)return;$('hostBox').classList.remove('hidden');
-  const maps=[['royale','CASTLE ARENA'],['frost','FROSTBITE OUTPOST'],['skyline','SKYLINE'],['manor','GRAVEYARD MANOR'],['refinery','DESERT REFINERY'],['temple','JUNGLE TEMPLE'],['nuketown','ATOM VILLAGE'],['shipyard','SHIPYARD'],['oldtown','OLD TOWN'],['farm','FARMSTEAD'],['downtown','DOWNTOWN'],['colosseum','GRAND COLOSSEUM'],['hotel','HOTEL (ZOMBIES)']];
+  const maps=[['royale','CASTLE ARENA'],['frost','FROSTBITE OUTPOST'],['skyline','SKYLINE'],['manor','GRAVEYARD MANOR'],['refinery','DESERT REFINERY'],['temple','JUNGLE TEMPLE'],['nuketown','MAPLE COURT'],['shipyard','SHIPYARD'],['oldtown','OLD TOWN'],['farm','FARMSTEAD'],['downtown','DOWNTOWN'],['colosseum','GRAND COLOSSEUM'],['hotel','HOTEL (ZOMBIES)']];
   if(HOSTC.map==='hotel')HOSTC.mode='zm';if(HOSTC.map==='colosseum'&&HOSTC.mode==='zm')HOSTC.mode='tdm';
   pills($('hostMapPick'),maps,HOSTC.map,id=>{HOSTC.map=id;LSset('hotd_hostc',HOSTC);renderHost()});
   pills($('hostModePick'),HOSTC.map==='hotel'?[['zm','CO-OP ZOMBIES']]:HOSTC.map==='colosseum'?[['tdm','TEAM DEATHMATCH'],['ffa','FREE-FOR-ALL'],['snd','SEARCH & DESTROY']]:[['tdm','TEAM DEATHMATCH'],['ffa','FREE-FOR-ALL'],['snd','SEARCH & DESTROY'],['zm','CO-OP ZOMBIES']],HOSTC.mode,id=>{if(id==='snd'&&HOSTC.mode!=='snd')HOSTC.map='colosseum';HOSTC.mode=id;LSset('hotd_hostc',HOSTC);renderHost()});
@@ -6168,8 +6164,8 @@ if(MAP==='skyline'){camera.position.set(31.5,surf(0)+9,64);camera.lookAt(31.5,su
 const MAP_INFO={
   hotel:{desc:'Six cramped floors of a haunted hotel. Ride the elevator and buy access floor by floor. The Broodmother waits on Floor 6.',
     tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Ride the elevator and buy access to each floor','Drink perks, roll the Mystery Crate (Floor 3)','Upgrade your gun at the Arc Forge on Floor 5','Slay the giant spider on Floor 6']},
-  royale:{desc:"A 3D tournament arena: blue and red halves split by a river, two bridges, princess towers and a king tower at each end, all surrounded by a cheering crowd.",
-    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Open your King\'s Court, then a bridge to cross the river','Mystery Crate is in the Blue Keep','The Arc Forge is on the red side','The Broodmother waits in the Red Keep']},
+  royale:{desc:"Two castles face each other across a river: blue and red halves, two wooden bridges, a stone keep and two watchtowers at each end, and a crowd in the stands.",
+    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Open your keep, then a bridge to cross the river','Mystery Crate is in the Blue Keep','The Arc Forge is on the red side','The Broodmother waits in the Red Keep']},
   skyline:{desc:'Seven skyscrapers high above a glowing city at dusk. Fight through offices, a penthouse, labs, a data center and apartments, all linked by glass sky bridges. Do not fall.',
     tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Open the sky bridges and tower doors to spread out','Mystery Crate is in the penthouse (North Sky Bridge)','The Arc Forge is in Tower F','The Broodmother waits in Tower C. Watch the ledges!']},
   frost:{desc:'A snowed-in military outpost in a blizzard. Fight across the courtyard, break into the barracks, mess hall, armory and comms compound, then open the hangar.',
@@ -6180,8 +6176,8 @@ const MAP_INFO={
     tips:['Earn points by shooting zombies','Jersey barriers are low cover','Mystery Crate is in the Warehouse','The Arc Forge is in the Garage','The Broodmother nests in the Cracking Unit']},
   temple:{desc:'Overgrown ruins deep in a rainy jungle. Cross the stream, open the jaguar and serpent shrines, the idol vault and the sunken baths, then the Great Pyramid.',
     tips:['Earn points by shooting zombies','The stream is shallow: you can wade through it','Mystery Crate is in the Idol Vault','The Arc Forge is in the Sunken Baths','The Broodmother sleeps inside the Great Pyramid']},
-  nuketown:{desc:'A replica of the famous cul-de-sac on a nuclear test site: a green house and a yellow house facing each other across the street, a school bus in the middle, garages, back yards and a fallout shelter.',
-    tips:['Earn points by shooting zombies','Both houses have an upstairs: take the stairs inside','Picket fences and windows can be jumped','Mystery Crate is in the Green Garage','The Arc Forge is in the Yellow Garage','The Broodmother waits in the Fallout Shelter']},
+  nuketown:{desc:'A quiet cul-de-sac at the edge of the desert: a blue house and a red house across the street, a camper van parked in the middle, garages, back yards, a pool and a storm cellar.',
+    tips:['Earn points by shooting zombies','Both houses have an upstairs: take the stairs inside','Picket fences and windows can be jumped','Mystery Crate is in the Blue Garage','The Arc Forge is in the Red Garage','The Broodmother waits in the Storm Cellar']},
   shipyard:{desc:'A container port at dusk. Fight between container stacks and cranes, wade around the piers, open the dock office, both warehouses and the customs house, then the dry dock.',
     tips:['Earn points by shooting zombies','The dock office and customs house have an upstairs','The water by the quay is shallow enough to wade','Mystery Crate is in Warehouse B','The Arc Forge is in the Customs House','The Broodmother is in the Dry Dock']},
   oldtown:{desc:'An old European village around a cobbled square with a fountain and market stalls. Walk into the cottages, open the tavern, bakery, blacksmith and mayor\'s house, then the old church.',
