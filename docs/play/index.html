@@ -1132,7 +1132,7 @@ function buildGun(id,pap,arms,att,camo){
     B(.01,ln-tp+.004,.012,GM.dark,-.013,(tp-.004+ln)/2,.02);B(.01,ln-tp+.004,.012,GM.dark,.013,(tp-.004+ln)/2,.02);B(.008,ln-tp+.006,.01,GM.dark,0,(tp-.006+ln)/2,muzzle+.06)}
   {const P0=g.children.filter(m=>m.isMesh);muzzle=realGun(g,id,att,muzzle,B,P0);if(REALISM){shapeGun(id,P0);gunDetail(g,id,att,B,P0);mergeGun(g)}}
   if(arms){
-    const fa=B(.1,.1,.5,GM.skin,.03,-.2,.24,.55),sl=B(.12,.12,.2,GM.sleeve,.03,-.3,.46,.55),fb=two?B(.1,.1,.5,GM.skin,-.1,-.17,-.12,.45):null;if(fb)fb.rotation.y=-.5;for(const a of[fa,sl,fb])if(a)a.userData.arm=1;
+    const fa=B(.1,.1,.5,GM.skin,.03,-.2,.24,.55),sl=B(.12,.12,.2,GM.sleeve,.03,-.3,.46,.55),fb=two?B(.1,.1,.5,GM.skin,-.1,-.17,-.12,.45):null;if(fb)fb.rotation.y=-.5;for(const a of[fa,sl,fb])if(a)a.userData.arm=1;if(fb){fb.userData.rp=fb.position.clone();fb.userData.rr=fb.rotation.clone()}g.userData.fb=fb;
     // long sleeves in the field uniform (the cuff a shade darker) and gloves, as a modern soldier wears them
     if(REALISM){if(!RL_VM.sleeve){RL_VM.sleeve=new THREE.MeshStandardMaterial({map:RL.uni(RL.uniKind()),color:0x8f8b76,roughness:.9});RL_VM.cuff=new THREE.MeshStandardMaterial({map:RL.uni(RL.uniKind()),color:0x6f6b5a,roughness:.9})}
       for(const a of[fa,sl,fb])if(a){a.geometry=RL_VM.arm;a.material=a===sl?RL_VM.cuff:RL_VM.sleeve;if(a!==sl)a.add(new THREE.Mesh(RL_VM.glove,RL_VM.gloveMat))}}
@@ -1540,7 +1540,7 @@ function makeHuman(m){const g=new THREE.Group();const M=(geo,mat,p,x,y,z)=>{cons
     const knee=new THREE.Group();knee.position.y=-HB.thigh[2];hip.add(knee);S(m.pants,HB.thigh[1]*1.02,knee);M(HGEO.shin,m.pants,knee);
     const ft=M(HGEO.foot,m.shoe||shoeMat,knee,0,-HB.shin[2]-HB.ankleY+.0425,HB.foot[1]*.27);hip.userData.knee=knee;
     // bend the knee with the stride (read from the hip swing the animations already drive)
-    ft.onBeforeRender=()=>{knee.rotation.x=.06+Math.abs(hip.rotation.x)*.85};return hip};
+    ft.onBeforeRender=()=>{knee.rotation.x=hip.userData.kb!=null?hip.userData.kb:.06+Math.abs(hip.rotation.x)*.85};return hip};
   const legL=leg(-1),legR=leg(1);
   // pelvis and torso (tapered: shoulders/chest down to the waist)
   const pel=M(HGEO.pelvis,m.pants,g,0,(HB.pelvis[2]+1.21)/2);pel.scale.set(HB.pelvis[0],1.21-HB.pelvis[2]+.02,HB.pelvis[1]);
@@ -1633,7 +1633,7 @@ function rchAttach(h,kind,keep){if(!RCH.on)return;rchLoad();const ids=RCH.sets[k
 // Copies the rig onto the bones (once per render call: the shadow pass draws first) and refreshes the skeleton being drawn.
 function rchPose(inst,mesh,ren){const f=ren.info.render.frame;
   if(inst.ren!==ren||inst.f!==f){inst.ren=ren;inst.f=f;const h=inst.h;
-    for(const l of[h.legL,h.legR])l.userData.knee.rotation.x=.06+Math.abs(l.rotation.x)*.85;   // normally set by the (now hidden) foot mesh
+    for(const l of[h.legL,h.legR])l.userData.knee.rotation.x=l.userData.kb!=null?l.userData.kb:.06+Math.abs(l.rotation.x)*.85;   // normally set by the (now hidden) foot mesh
     for(const d of inst.drv){const p=d.p,a=p==='elL'?h.armL:p==='elR'?h.armR:p==='kneeL'?h.legL:p==='kneeR'?h.legR:null;
       if(a)d.now.copy(a.quaternion).multiply(p[0]==='e'?a.userData.elbow.quaternion:a.userData.knee.quaternion);else d.now.copy(h[p].quaternion);
       d.now.multiply(d.rest);d.b.quaternion.copy(_rq.copy(d.upD?d.upD.now:d.par).invert()).multiply(d.now)}
@@ -1873,7 +1873,7 @@ function fire(){
   const rec=d.recoilMul||1;vm.kick=Math.min(1,vm.kick+(d.kind==='sniper'||d.kind==='shotgun'?1:.45)*rec);{const kk=(d.kick!=null?d.kick:(d.kind==='sniper'?.03:d.kind==='shotgun'?.025:.006))*rec*(P.adsK>.5?.75:1);P.pitch=Math.min(1.5,P.pitch+kk);P.recoilPend=(P.recoilPend||0)+kk*.8;P.yaw+=rnd(-.4,.4)*kk}
   SFX.shot(d.kind,{id:w.id,q:d.quiet,self:1});
   if(MPM&&!d.quiet)MP.noise={x:P.x,z:P.z,t:now};
-  const o=camera.position.clone(),mz=muzzleWorld();
+  const o=camera.position.clone(),mz=muzzleWorld();shotFx(d,w,mz);
   if(!d.projectile&&!d.chain&&!d.freeze){_r.set(1,0,0).applyQuaternion(camera.quaternion);const sp=mz.clone().addScaledVector(_r,.12);const pi=pNext;emit(sp.x,sp.y,sp.z,d.kind==='shotgun'?0xc02020:0xd8a838,1,.6,.035,1.1,14);const pp=parts[pi];pp.vx=_r.x*2.5+rnd(-.4,.4);pp.vz=_r.z*2.5+rnd(-.4,.4);pp.vy=rnd(1.5,2.6)}
   fxLight.position.copy(mz);fxLight.intensity=d.projectile?1.2:2;fxLight.color.set(d.kind==='ray'?0x50ff70:d.kind==='volt'?0x70e8ff:w.pap?0xc070ff:0xffb050);
   const spread=curSpread(d);P.bloom=Math.min(1,bloomNow()+(d.kind==='shotgun'||d.kind==='sniper'?0:.12));P.bloomT=now;
@@ -2154,21 +2154,98 @@ const flashMat=new THREE.MeshBasicMaterial({color:0xffd070,transparent:true,opac
 function refreshViewModel(){const w=curGun();const key=w?w.id+'p'+(w.pap|0)+(w.att?JSON.stringify(w.att):'')+'c'+(equippedCamo(w.id)||'')+'k'+(KC_EQ[w.id]||''):'none';if(vm.key===key)return;if(vm.group)gunHolder.remove(vm.group);vm.key=key;vm.group=null;if(!w)return;
   vm.group=buildGun(w.id,w.pap,true,w.att,w.pap?null:equippedCamo(w.id));attachKeychain(vm.group,KC_EQ[w.id]);gunHolder.add(vm.group);const fl=new THREE.Mesh(geoBox,flashMat);fl.scale.set(.14,.14,.14);fl.position.set(0,.03,vm.group.userData.muzzle-.05);fl.rotation.z=.78;vm.group.add(fl);vm.flash=fl}
 function updateViewModel(dt){
-  refreshViewModel();if(!vm.group)return;const w=curGun();const d=def(w);
+  updateCasings(dt);refreshViewModel();if(!vm.group)return;const w=curGun();const d=def(w);
   const hip=[.2,-.2,-.42],ads=[0,-sightY(w),-.3];const k=P.adsK;
   vm.kick=Math.max(0,vm.kick-dt*8);vm.melee=Math.max(0,vm.melee-dt);
   const sp=Math.hypot(P.vx,P.vz);P.bob+=dt*sp*1.9;const bobA=(1-k*.8)*Math.min(1,sp/4);
   let x=hip[0]+(ads[0]-hip[0])*k+Math.sin(P.bob)*.012*bobA,y=hip[1]+(ads[1]-hip[1])*k-Math.abs(Math.cos(P.bob))*.012*bobA,z=hip[2]+(ads[2]-hip[2])*k+vm.kick*.06;
   let rx=vm.kick*.12,ry=0,rz=0;
-  if(P.reloadT>0){const t=1-P.reloadT/P.reloadMax;const dip=Math.sin(t*Math.PI);y-=dip*.12;rx-=dip*.6;rz+=dip*.4}
+  // reload in stages: roll the gun to the mag well, support hand down to the pouch, back up with a fresh mag, slap it home,
+  // rack the charging handle (or slide); shotguns feed shells one after another
+  vm.rlHand=0;vm.rlMag=false;
+  if(P.reloadT>0){const t=1-P.reloadT/P.reloadMax,ss=(a,b)=>{const u=clamp((t-a)/(b-a),0,1);return u*u*(3-2*u)},bump=(c,wd)=>Math.max(0,1-Math.abs(t-c)/wd);
+    const tilt=ss(0,.14)-ss(.84,1),sg=d.kind==='shotgun';y-=tilt*.05;x-=tilt*.03;rz+=tilt*.5;rx+=tilt*.22;
+    if(sg){vm.rlHand=Math.abs(Math.sin(clamp((t-.1)/.75,0,1)*Math.PI*4))*tilt*.55;y+=Math.abs(Math.sin(t*Math.PI*8))*.006*tilt}
+    else{vm.rlHand=ss(.12,.3)-ss(.36,.6);vm.rlMag=t>.38&&t<.62;y+=bump(.63,.04)*.025;rx-=bump(.63,.04)*.08;const rk=bump(.77,.06);z+=rk*.035;ry+=rk*.12;rx+=rk*.06}}
+  vm.spr=(vm.spr||0)+((P.sprinting&&sp>5?1:0)-(vm.spr||0))*Math.min(1,dt*9);
+  if(vm.spr>.01){const s=vm.spr;x+=-.06*s+Math.sin(P.bob)*.02*s;y-=.05*s+Math.abs(Math.cos(P.bob))*.025*s;z+=.02*s;rx-=.25*s;ry+=.75*s;rz+=.35*s}   // weapon carried across the chest at a sprint
+  // weapon inertia: the gun trails your turns and settles, breathes a little at rest (much less when aiming)
+  {const dYw=angTo(vm.lyaw==null?P.yaw:vm.lyaw,P.yaw),dPt=P.pitch-(vm.lpit==null?P.pitch:vm.lpit),iv=dt>0?1/dt:0,sk=Math.min(1,dt*12),sw=1-k*.75;vm.lyaw=P.yaw;vm.lpit=P.pitch;
+    vm.sx=(vm.sx||0)+(clamp(dYw*iv*.006,-.04,.04)-(vm.sx||0))*sk;vm.sy=(vm.sy||0)+(clamp(-dPt*iv*.006,-.04,.04)-(vm.sy||0))*sk;
+    x+=vm.sx*sw+Math.sin(now*.9)*.0018*(1-k*.8);y+=vm.sy*sw+Math.sin(now*1.7)*.0025*(1-k*.8);ry-=vm.sx*1.4*sw;rx+=vm.sy*1.4*sw;
+    vm.land=Math.max(0,(vm.land||0)-dt*3);y-=vm.land*.05;rx+=vm.land*.08}
+  vm.sld=(vm.sld||0)+((P.slideT>0?1:0)-(vm.sld||0))*Math.min(1,dt*10);if(vm.sld>.01){rz-=.3*vm.sld;y-=.03*vm.sld;x-=.03*vm.sld}
   if(P.swapT>0){y-=P.swapT*.5}
   if(P.busyT>0){y-=Math.min(.35,P.busyT*.5)}
   if(vm.melee>0){const t=Math.sin(vm.melee/.35*Math.PI);x-=t*.2;ry+=t*.9;rz-=t*.4}
   if((scoped(d)||d.ret==='acog')&&k>.9)y-=1;
-  gunHolder.position.set(x,y,z);gunHolder.rotation.set(rx,ry,rz);{const kc=vm.group.userData.kc;if(kc)kc.rotation.z=Math.sin(P.bob*2)*.25+vm.kick*.7+Math.sin(now*3)*.05}
+  gunHolder.position.set(x,y,z);gunHolder.rotation.set(rx,ry,rz);vmSupportHand();{const kc=vm.group.userData.kc;if(kc)kc.rotation.z=Math.sin(P.bob*2)*.25+vm.kick*.7+Math.sin(now*3)*.05}
   vm.flash.visible=now-P.lastShot<.04&&!d.projectile&&!d.quiet&&!d.hideFlash;vm.flash.material.color.set(w.pap?0xd080ff:0xffd070);
 }
 
+const _vmP=new THREE.Vector3();
+function vmSupportHand(){const g=vm.group,fb=g&&g.userData.fb;if(!fb||!fb.userData.rp)return;const hd=vm.rlHand||0,rr=fb.userData.rr;
+  fb.position.copy(fb.userData.rp);fb.position.y-=hd*.32;fb.position.z+=hd*.1;fb.position.x+=hd*.02;fb.rotation.set(rr.x+hd*.5,rr.y,rr.z);fb.updateMatrix();
+  let mg=g.userData.rlMag;if(vm.rlMag&&!mg){mg=new THREE.Mesh(geoRBox,GM.dark);mg.scale.set(.045,.13,.07);g.add(mg);g.userData.rlMag=mg}
+  if(mg){mg.visible=!!vm.rlMag;if(mg.visible){_vmP.set(0,0,-.46).applyMatrix4(fb.matrix);mg.position.copy(_vmP);mg.position.y+=.05;mg.rotation.set(.2,0,0)}}}
+// ---- third-person poses for soldiers (bots, squadmates, online players): crouch, slide, sprint lean, reload
+const _spT=new THREE.Vector3(),_spPole=new THREE.Vector3(-.7,-1,-.1),SP_T=HB.thigh[2],SP_S=HB.shin[2];
+function soldierPose(e,p,root,dt,o){if(!p||!p.legL)return;const k=Math.min(1,dt*10);if(e._dd!=null){e._dd=null;root.rotation.z=0}
+  {const px=root.position.x,pz=root.position.z;if(e._fx!=null){const mv=Math.hypot(px-e._fx,pz-e._fz);if(mv<1){e._st=(e._st||0)+mv;
+    if(e._st>(o.sp?2.1:1.7)&&!o.sl){e._st=0;const b=fsBufs();if(b)sndAt(b[(Math.random()*4)|0],px,pz,o.cr?.18:o.sp?.6:.4,28,.9+Math.random()*.2)}}}e._fx=px;e._fz=pz}
+  e._cr=(e._cr||0)+((o.cr?1:0)-(e._cr||0))*k;e._sl=(e._sl||0)+((o.sl?1:0)-(e._sl||0))*Math.min(1,dt*14);e._sp=(e._sp||0)+((o.sp?1:0)-(e._sp||0))*k;
+  const sl=e._sl,cr=e._cr*(1-sl),st=1-cr-sl,sp=e._sp*st;let hi=0;
+  for(const leg of[p.legL,p.legR]){const L=leg===p.legL,g0=leg.rotation.x*(1+.35*sp);   // the caller set the walk cycle; longer strides at a sprint
+    const h=g0*st+(g0*.45-1)*cr+(L?-.55:-1.15)*sl,kn=(.06+Math.abs(g0)*.85)*st+(1.85-g0*.3)*cr+(L?1.75:.25)*sl;
+    leg.rotation.x=h;leg.userData.kb=cr+sl>.01?kn:null;const ht=SP_T*Math.cos(h)+SP_S*Math.cos(h+kn);if(ht>hi)hi=ht}
+  root.position.y-=((SP_T+SP_S)-hi)*(st*.5+cr)+.45*sl;root.rotation.x=.14*cr+.1*sp-.68*sl;   // hips drop with bent knees; lean into a crouch or sprint, back into a slide
+  if(p.ikFore&&p.armL){if(o.rl>=0){const t=o.rl,ss=(a,b)=>{const u=clamp((t-a)/(b-a),0,1);return u*u*(3-2*u)},well=ss(0,.12)-ss(.8,.97),down=ss(.15,.32)-ss(.38,.62);
+      _spT.copy(p.ikFore).lerp(p.ikGrip,.5*well);_spT.y-=.09*well;_spT.x=_spT.x+(-.13-_spT.x)*down;_spT.y+=(1.05-_spT.y)*down;_spT.z+=(.16-_spT.z)*down;
+      armIK(p.armL,_spT,_spPole);e._rlOn=true}
+    else if(e._rlOn){armIK(p.armL,p.ikFore,_spPole);e._rlOn=false}}}
+// ---- realism: footsteps, landing, shell casings, muzzle smoke, death falls (sounds share the gun-sound bus)
+const FSTEP={buf:null,tink:null};
+function fsNorm(b){const o=b.getChannelData(0);let pk=0;for(let i=0;i<o.length;i++){const a=Math.abs(o[i]);if(a>pk)pk=a}const g=.9/(pk||1),fd=Math.floor(o.length*.15);for(let i=0;i<o.length;i++)o[i]*=g*(i>o.length-fd?(o.length-i)/fd:1);return b}
+function fsBufs(){if(FSTEP.buf||!AC)return FSTEP.buf;const sr=AC.sampleRate,hard=!OPEN;   // hotel floors are hard, outside is sand and grit
+  FSTEP.buf=[0,1,2,3].map(v=>{const n=Math.floor(sr*.2),b=AC.createBuffer(1,n,sr),o=b.getChannelData(0),rn=gsRand(40+v);
+    const a1=1-Math.exp(-6.2832*(hard?1400:900)/sr),dB=Math.exp(-1/(sr*(hard?.018:.03))),dT=Math.exp(-1/(sr*.03)),f0=(hard?95:70)*(1+v*.06),toe=Math.floor(sr*(.05+v*.007));
+    let l1=0,l2=0,eB=1,eT=1,ph=0;
+    for(let i=0;i<n;i++){const w=rn();l1+=a1*(w-l1);l2+=a1*(l1-l2);ph+=6.2832*f0/sr;let s=l2*2.5*eB+Math.sin(ph)*.5*eT;   // heel strike
+      if(i>=toe)s+=l2*1.6*Math.exp(-(i-toe)/(sr*(hard?.012:.025)));if(!hard)s+=w*.12*Math.exp(-i/(sr*.06));o[i]=s;eB*=dB;eT*=dT}   // then the toe, and grit outside
+    return fsNorm(b)});
+  return FSTEP.buf}
+function tinkBuf(){if(FSTEP.tink||!AC)return FSTEP.tink;const sr=AC.sampleRate,n=Math.floor(sr*.09),b=AC.createBuffer(1,n,sr),o=b.getChannelData(0);
+  for(let i=0;i<n;i++){const t=i/sr;o[i]=(Math.sin(6.2832*3300*t)*.5+Math.sin(6.2832*5150*t)*.3+Math.sin(6.2832*7400*t)*.2)*Math.exp(-t/.022)}return FSTEP.tink=fsNorm(b)}
+function sndAt(buf,x,z,vol,maxD,rate){if(!AC||!buf)return;if(!GSND.ready)gsInit();if(!GSND.ready)return;let dd=0,pan=0;
+  if(x!=null){const dx=x-P.x,dz=z-P.z;dd=Math.hypot(dx,dz);if(dd>maxD)return;if(dd>.5)pan=clamp((dx*Math.cos(P.yaw)-dz*Math.sin(P.yaw))/dd,-1,1)*.75}
+  vol*=sfxScale/(1+dd/4);if(!(vol>.002))return;const s=AC.createBufferSource();s.buffer=buf;s.playbackRate.value=rate||1;let src=s;
+  if(dd>3){const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=Math.max(500,12000/(1+dd/5));s.connect(f);src=f}
+  const g=AC.createGain();g.gain.value=vol;src.connect(g);if(pan&&AC.createStereoPanner){const pn=AC.createStereoPanner();pn.pan.value=pan;g.connect(pn);pn.connect(GSND.bus)}else g.connect(GSND.bus);s.start()}
+function stepUpdate(dt){const sp=Math.hypot(P.vx,P.vz);if(!P.onGround||P.slideT>0||sp<1.2||travel)return;P.stepD=(P.stepD||0)+sp*dt;
+  if(P.stepD>=(P.sprinting?2.1:P.crouched?1.2:1.65)){P.stepD=0;const b=fsBufs();if(b)sndAt(b[(Math.random()*4)|0],null,null,P.sprinting?.22:P.crouched?.06:.13,0,.92+Math.random()*.16)}}
+function playerLand(v){const k=Math.min(1,.25+(v-5.5)/10);P.eyeH=(P.eyeH||1.62)-.13*k;vm.land=k;const b=fsBufs();if(b)sndAt(b[0],null,null,.18+.2*k,0,.8);if(k>.5)shake=Math.min(1,shake+.15*k)}
+// spent brass (shotgun hulls for shotguns) flies out of the ejection port, bounces and tinks
+const CAS={list:[],i:0,geo:null};
+function casingsInit(){CAS.geo=new THREE.CylinderGeometry(.0055,.0055,.026,6);CAS.mat=new THREE.MeshStandardMaterial({color:0xc8a040,metalness:.85,roughness:.35});CAS.hull=new THREE.MeshStandardMaterial({color:0xa02018,roughness:.6});
+  for(let i=0;i<24;i++){const m=new THREE.Mesh(CAS.geo,CAS.mat);m.visible=false;scene.add(m);CAS.list.push({m,life:0,vx:0,vy:0,vz:0,sx:0,sz:0,b:0,f:0})}}
+function ejectCasing(d){if(!CAS.geo)casingsInit();const c=CAS.list[CAS.i];CAS.i=(CAS.i+1)%CAS.list.length;const m=c.m,k=d.kind,sg=k==='shotgun';
+  camera.getWorldDirection(_v);_r.set(1,0,0).applyQuaternion(camera.quaternion);m.material=sg?CAS.hull:CAS.mat;
+  const s=sg?3.2:k==='sniper'||k==='lmg'?1.4:k==='pistol'||k==='smg'?.85:1;m.scale.set(s,sg?2.4:k==='sniper'?2.2:1,s);
+  m.position.copy(camera.position).addScaledVector(_v,.32).addScaledVector(_r,P.adsK>.5?.06:.16);m.position.y-=.08;
+  const sp=rnd(1.8,2.6);c.vx=_r.x*sp+_v.x*rnd(-.3,.4)+P.vx;c.vz=_r.z*sp+_v.z*rnd(-.3,.4)+P.vz;c.vy=rnd(1.4,2.2);c.sx=rnd(-14,14);c.sz=rnd(-14,14);c.life=2.6;c.b=0;c.f=P.floor;m.visible=true}
+function updateCasings(dt){if(!CAS.geo)return;for(const c of CAS.list){if(c.life<=0)continue;c.life-=dt;const m=c.m;if(c.life<=0){m.visible=false;continue}
+  c.vy-=9.8*dt;m.position.x+=c.vx*dt;m.position.y+=c.vy*dt;m.position.z+=c.vz*dt;m.rotation.x+=c.sx*dt;m.rotation.z+=c.sz*dt;
+  let fl=surf(c.f);try{const g=groundAt(c.f,m.position.x,m.position.z,.02,m.position.y+.05);if(g>-1e8)fl=g}catch(e){}
+  if(m.position.y<fl+.006){m.position.y=fl+.006;
+    if(c.vy<-.6){if(c.b<2)sndAt(tinkBuf(),m.position.x,m.position.z,c.b?.05:.09,14,rnd(.85,1.2));c.b++;c.vy*=-.32;c.vx*=.5;c.vz*=.5;c.sx*=.5;c.sz*=.5}
+    else{c.vy=0;c.vx*=Math.exp(-dt*8);c.vz*=Math.exp(-dt*8);c.sx=c.sz=0;m.rotation.x=Math.PI/2}}}}
+function shotFx(d,w,mz){if(d.projectile||d.chain||d.freeze||/^(ray|volt|cryo|deathmachine)$/.test(d.kind))return;
+  if(Math.random()<.45)emit(mz.x,mz.y,mz.z,0x9c978f,1,.25,.09,1.1,-.6);   // a wisp of smoke from the muzzle
+  if(w.id==='m870'||w.id==='kar98k'||w.id==='l115')later(.42,()=>ejectCasing(d));else ejectCasing(d)}   // pump and bolt guns eject when worked
+// deaths: crumple at the knees and fall back, forward or to a side under gravity, with a small bounce
+function deathPose(e,p,root,t){if(e._dd==null)e._dd=(Math.random()*4)|0;const u=Math.min(1,(t/.6)*(t/.6)),a=u*Math.PI/2*(t>.6?1+.06*Math.sin((t-.6)*18)*Math.exp(-(t-.6)*8):1),dd=e._dd;
+  root.rotation.x=dd===0?-a:dd===1?a*.95:0;root.rotation.z=dd===2?a:dd===3?-a:0;
+  if(p&&p.legL){const kb=t<.5?Math.min(1.3,t*5):1.3-Math.min(1,(t-.5)*3)*.9;p.legL.userData.kb=kb;p.legR.userData.kb=kb*.8;p.legL.rotation.x=-.3*Math.min(1,t*4);p.legR.rotation.x=.1}}
 // ================= main update =================
 function updatePlayer(dt){
   if(P.menuOpen||P.stunUntil>now)for(const k in keys)keys[k]=false;
@@ -2178,22 +2255,23 @@ function updatePlayer(dt){
   if(keys.KeyW){fx+=fw[0];fz+=fw[1]}if(keys.KeyS){fx-=fw[0];fz-=fw[1]}if(keys.KeyD){fx+=rt[0];fz+=rt[1]}if(keys.KeyA){fx-=rt[0];fz-=rt[1]}
   const l=Math.hypot(fx,fz);if(l>0){fx/=l;fz/=l}if(GP.on&&(GP.mx||GP.my)&&!P.menuOpen&&!(P.stunUntil>now)){fx=fw[0]*-GP.my+rt[0]*GP.mx;fz=fw[1]*-GP.my+rt[1]*GP.mx}
   updateCrouch(dt);updateLean(dt);
-  const sprint=keys.ShiftLeft&&keys.KeyW&&!P.ads&&P.reloadT<=0&&!P.crouched;
+  const sprint=keys.ShiftLeft&&keys.KeyW&&!P.ads&&P.reloadT<=0&&!P.crouched;P.sprinting=sprint;
   let spd=(sprint?6.4*(hasWZ('double')?1.12:1):4.3)*(P.perks.has('swift')?1.2:1)*(P.slowUntil>now?.45:1)*(P.ads?.6:1)*(P.crouched?(hasWZ('double')?.7:.52):1)*(hasWZ('resolute')&&now-P.lastHit<2?1.2:1)*(P.leanK?1-.2*Math.abs(P.leanK):1);
   if(MPM&&curGun()){const cd=def(curGun());spd*=mpW(cd).mob*(cd.mobMul||1)}
   if(WADE&&cellAt(f,Math.floor(P.x),Math.floor(P.z))===T.WATER){spd*=.65;if(Math.hypot(P.vx,P.vz)>1&&Math.random()<.35)emit(P.x+rnd(-.3,.3),P.y+.05,P.z+rnd(-.3,.3),0xbfe4ff,2,1.4,.06,.35,9)}
   if(P.hogUntil>now)spd=sprint?10.5:8.5;
   const acc=P.onGround?14:4;if(P.slideT>0){P.vx=P.slideDX*P.slideV;P.vz=P.slideDZ*P.slideV}else{P.vx+=(fx*spd-P.vx)*Math.min(1,acc*dt);P.vz+=(fz*spd-P.vz)*Math.min(1,acc*dt)}
   slideMove(P,P.vx*dt,P.vz*dt,.3,f,P.y,false);
-  P.vy-=25*dt;P.y+=P.vy*dt;const gnd=groundAt(f,P.x,P.z,.3,P.y);
+  const airL=!P.onGround;P.vy-=25*dt;const vyL=P.vy;P.y+=P.vy*dt;const gnd=groundAt(f,P.x,P.z,.3,P.y);
   if(P.y<=gnd){if(gnd-P.y<.65){P.y=gnd}else P.y=gnd;P.vy=0;P.onGround=true}else P.onGround=P.y-gnd<.02;
+  if(airL&&P.onGround&&vyL<-5.5)playerLand(-vyL);
   if(gnd>-1e8&&P.onGround&&[[-.8,0],[.8,0],[0,-.8],[0,.8]].every(([ax,az])=>cellAt(f,Math.floor(P.x+ax),Math.floor(P.z+az))!==T.VOID)){P.safeX=P.x;P.safeZ=P.z}
   if(P.y<surf(f)-18){fellOff();return}
   const ceil=surf(f)+wallH(f)-1.85;if(P.y>ceil){P.y=ceil;P.vy=Math.min(0,P.vy)}
   if(keys.Space&&P.onGround){P.vy=7.6;P.onGround=false;P.crouchLock=false}
   P.field=Math.min(1,P.field+dt/150);
   if(now-P.lastHit>3.5&&P.hp<P.maxHp)P.hp=Math.min(P.maxHp,P.hp+45*dt);
-  camUpdate(dt);
+  stepUpdate(dt);camUpdate(dt);
 }
 // Tap Ctrl (or C) to crouch / stand. Hold it to stay crouched; holding it while running starts a slide.
 const CROUCH_TAP=.16;
@@ -3705,7 +3783,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.19.1628';
+const GAME_VERSION=/*VER*/'2026.10.19.1639';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -4106,7 +4184,7 @@ function makeSoldier(team,kind,skinId){
   g.traverse(o=>{if(o.isMesh)o.castShadow=true});
   if(skinId)applySkinToSoldier({head,skinMat:skin,h,pc},skinId,camo,pants);
   else if(RCH.on){for(const b of bands)b.scale.set(1.3,1,1.3);rchAttach(h,'sol',[gun,...bands])}   // a real soldier body; the armbands carry the team colour
-  return Object.assign(h,{gun});
+  return Object.assign(h,{gun,ikFore:fore.clone(),ikGrip:grip.clone()});
 }
 function nameTag(text,color){const t=canvasTex(128,32,g=>{g.font=SMOOTH()?'600 19px Bahnschrift, Arial, sans-serif':'bold 18px monospace';g.textAlign='center';g.fillStyle='rgba(0,0,0,.55)';g.fillRect(14,4,100,24);g.fillStyle=color;g.fillText(text,64,22)},true);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));sp.scale.set(1.3,.33,1);sp.position.y=2.4;sp.renderOrder=5;return sp}
@@ -4151,7 +4229,7 @@ function botPerceive(b){
 function angTo(a,b){let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return d}
 function updateBot(b,dt){if(b.stunUntil>now&&!b.dead){b.target=null;return}
   const S=surf(0),m=b.mesh,p=b.parts;
-  if(b.dead){b.deadT+=dt;m.rotation.x=Math.max(-Math.PI/2,-b.deadT*4);if(b.deadT>1.2)m.position.y=S-(b.deadT-1.2)*.8;if(b.deadT>5&&!MP.ended&&!MP.snd)respawnBot(b);return}
+  if(b.dead){b.deadT+=dt;deathPose(b,p,m,b.deadT);if(b.deadT>1.2)m.position.y=S-(b.deadT-1.2)*.8;if(b.deadT>5&&!MP.ended&&!MP.snd)respawnBot(b);return}
   if(b.stunUntil>now){m.position.set(b.x,S,b.z);return}
   const SK=SKILLS[MPC.skill]||SKILLS.regular;
   b.thinkT-=dt;if(b.thinkT<=0){b.thinkT=rnd(.14,.24);botPerceive(b)}
@@ -4182,6 +4260,7 @@ function updateBot(b,dt){if(b.stunUntil>now&&!b.dead){b.target=null;return}
   if(!t&&moved<dt*.5){b.stuck+=dt;if(b.stuck>1.2){b.stuck=0;b.goal=null}}else b.stuck=0;
   b.phase+=moved*2.6;const sw=Math.sin(b.phase)*.55*Math.min(1,moved/dt/3);p.legL.rotation.x=sw;p.legR.rotation.x=-sw;
   m.position.set(b.x,S,b.z);m.rotation.y=b.yaw;
+  soldierPose(b,p,m,dt,{rl:b.reloadT>0?1-b.reloadT/b.w.reload:-1});
 }
 function botFire(b,t,dist){
   if(b.ammo<=0){b.reloadT=b.w.reload;return}
@@ -4756,14 +4835,14 @@ function startOnline(w){
   else showMsg('ONLINE '+(MP.tdm?'TEAM DEATHMATCH':'FREE-FOR-ALL'),`${NET.remote.size+1} players · first to ${MP.limit}`,3);SFX.roundStart();
 }
 function netUpdate(dt){sendBotStates(dt);
-  NET.sendT-=dt;if(NET.sendT<=0){NET.sendT=1/15;const g=curGun();NET.send({t:'state',s:{x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),yaw:+(P.yaw+Math.PI).toFixed(3),k:g?WEAPONS[g.id].kind:'ar',f:P.floor,c:P.crouched?1:0,ln:+(P.leanAmt||0).toFixed(2),d:P.mpDead?1:0,h:P.hogUntil>now?1:0}})}
+  NET.sendT-=dt;if(NET.sendT<=0){NET.sendT=1/15;const g=curGun();NET.send({t:'state',s:{x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),yaw:+(P.yaw+Math.PI).toFixed(3),k:g?WEAPONS[g.id].kind:'ar',f:P.floor,c:P.crouched?1:0,sl:P.slideT>0?1:0,sp:P.sprinting?1:0,rl:P.reloadT>0?+(1-P.reloadT/P.reloadMax).toFixed(2):0,ln:+(P.leanAmt||0).toFixed(2),d:P.mpDead?1:0,h:P.hogUntil>now?1:0}})}
   const S=surf(0),k=1-Math.exp(-dt*14);
   for(const r of NET.remote.values()){
-    if(r.dead){r.deadT=(r.deadT||0)+dt;r.mesh.rotation.x=Math.max(-Math.PI/2,-r.deadT*4);r.mesh.position.set(r.x,S-(r.deadT>1.2?(r.deadT-1.2)*.8:0),r.z);if(r.deadT>3)r.mesh.visible=false;continue}
+    if(r.dead){r.deadT=(r.deadT||0)+dt;deathPose(r,r.parts,r.mesh,r.deadT);r.mesh.position.set(r.x,S-(r.deadT>1.2?(r.deadT-1.2)*.8:0),r.z);if(r.deadT>3)r.mesh.visible=false;continue}
     const ox=r.x,oz=r.z;r.x+=(r.tx-r.x)*k;r.z+=(r.tz-r.z)*k;r.y+=(r.ty-r.y)*k;r.yaw+=angTo(r.yaw,r.tyaw)*k;
     const mv=Math.hypot(r.x-ox,r.z-oz);r.phase+=mv*2.6;const sw=Math.sin(r.phase)*.55*Math.min(1,mv/dt/3);r.parts.legL.rotation.x=sw;r.parts.legR.rotation.x=-sw;
     if(r.hog&&!r.hogM){r.hogM=makeHog().g;r.hogM.position.y=-.85;r.mesh.add(r.hogM)}if(r.hogM)r.hogM.visible=!!r.hog;
-    r.mesh.visible=r.seen;r.mesh.position.set(r.x,r.y+(r.hog?.85:0),r.z);r.lean=(r.lean||0)+((r.tlean||0)-(r.lean||0))*Math.min(1,dt*12);r.mesh.rotation.set(0,r.yaw,-r.lean*.2);r.cs=(r.cs||1)+((r.crouch?.68:1)-(r.cs||1))*Math.min(1,dt*12);r.mesh.scale.set(1,r.cs,1)}
+    r.mesh.visible=r.seen;r.mesh.position.set(r.x,r.y+(r.hog?.85:0),r.z);r.lean=(r.lean||0)+((r.tlean||0)-(r.lean||0))*Math.min(1,dt*12);r.mesh.rotation.set(0,r.yaw,-r.lean*.2);soldierPose(r,r.parts,r.mesh,dt,{cr:r.crouch,sl:r.slide,sp:r.sprint,rl:r.rl})}
 }
 function netHit(r,dmg,head,src,wname){if(r.dead||(MP.tdm&&r.team===P.team))return;if(hasWZ('scout'))r.revealUntil=now+3;if(src==='explosion')dmg=Math.min(dmg*.3,130);if(head&&src!=='explosion')dmg*=1.5;
   hitMarker(false);SFX.hit();emit(r.x,surf(0)+(head?1.75:1.1),r.z,0x8a0a0a,3,1.5,.06,.3);
@@ -4794,7 +4873,7 @@ const isHost=()=>NET.on&&NET.host!=null&&NET.host===NET.id;
 function startNetGame(w){const zm=w.room.mode==='zm',want=zm?'zm':'mp';
   if(MODE!==want||MAP!==w.room.map){netStatus('Loading '+MAPS[w.room.map].name+' ...');if(NET.ws){NET.ws.onclose=null;NET.ws.close()}goURL({map:w.room.map,mode:want,online:'1',autostart:'online'});return}
   if(zm)startCoop(w);else startOnline(w)}
-function applyRemoteState(id,s){const r=NET.remote.get(id);if(!r||!s)return;r.f=+s.f||0;r.crouch=!!s.c;r.tlean=+s.ln||0;r.tx=+s.x||0;r.tz=+s.z||0;r.ty=+s.y||surf(0);r.tyaw=+s.yaw||0;
+function applyRemoteState(id,s){const r=NET.remote.get(id);if(!r||!s)return;r.f=+s.f||0;r.crouch=!!s.c;r.slide=!!s.sl;r.sprint=!!s.sp;r.rl=+s.rl>0?+s.rl:-1;r.tlean=+s.ln||0;r.tx=+s.x||0;r.tz=+s.z||0;r.ty=+s.y||surf(0);r.tyaw=+s.yaw||0;
   if(!r.seen){r.x=r.tx;r.z=r.tz;r.y=r.ty;r.yaw=r.tyaw;r.seen=true}
   const wasDead=r.dead;r.dead=!!s.d;if(wasDead&&!r.dead){r.x=r.tx;r.z=r.tz;r.mesh.rotation.x=0}if(!wasDead&&r.dead)r.deadT=0;
   r.hog=!!s.h;if(s.k&&s.k!==r.kind&&WEAPONS[s.k]){r.kind=s.k;buildRemoteMesh(r)}r.mesh.visible=r.seen}
@@ -4814,6 +4893,7 @@ function sendBotStates(dt){if(!isHost()||!MP.bots.length)return;NET.botT=(NET.bo
 // ---------------- co-op zombies ----------------
 const ZC={on:false,host:false,nid:0,by:null,sendT:0,prox:new Map(),dropId:0,overSent:false,checkT:0,left:0};
 function startCoop(w){
+  $('deploy').classList.add('hidden');   // the deploy card stayed over the game: online zombies could not be played
   NET.on=true;ZC.on=true;MP.tdm=true;P.team='blue';NET.team=w.team;
   for(const p of w.players)addRemote(p);
   startGame();showMsg('ONLINE CO-OP',`${NET.remote.size+1} survivor${NET.remote.size?'s':''} · ${MAPS[MAP].name}`,3);renderCoopBox()}
@@ -4940,7 +5020,7 @@ function squadFire(a,e,dist){if(a.ammo<=0){a.reloadT=a.w.reload;return}a.ammo--;
   SFX.shot(a.w.kind,{x:a.x,z:a.z,id:a.w.id,v:.65})}
 function updateSquad(dt){if(!SQ.on)return;const S=surf(0);
   for(const a of SQ.bots){const m=a.mesh;
-    if(a.dead){a.deadT+=dt;m.rotation.x=Math.max(-Math.PI/2,-a.deadT*4);m.position.set(a.x,S,a.z);continue}
+    if(a.dead){a.deadT+=dt;deathPose(a,a.parts,m,a.deadT);m.position.set(a.x,S,a.z);continue}
     if(now-a.lastHit>4)a.hp=Math.min(100,a.hp+20*dt);
     if(a.reloadT>0){a.reloadT-=dt;if(a.reloadT<=0)a.ammo=a.w.mag}a.fireCD-=dt;
     // pick the nearest zombie it can see
@@ -4964,7 +5044,7 @@ function updateSquad(dt){if(!SQ.on)return;const S=surf(0);
     const ox=a.x,oz=a.z;slideMove(a,mvx*dt,mvz*dt,.3,0,S,true);const moved=Math.hypot(a.x-ox,a.z-oz);
     if(dl>30&&lead!==a&&!t){a.stuck+=dt;if(a.stuck>6){a.stuck=0;a.x=lead.x+rnd(-1,1);a.z=lead.z+rnd(-1,1);if(grid[0][Math.floor(a.x)+Math.floor(a.z)*W]){a.x=lead.x;a.z=lead.z}}}else a.stuck=0;
     a.phase+=moved*2.6;const sw=Math.sin(a.phase)*.55*Math.min(1,moved/dt/3);a.parts.legL.rotation.x=sw;a.parts.legR.rotation.x=-sw;
-    m.position.set(a.x,S,a.z);m.rotation.set(0,a.yaw,0)}
+    m.position.set(a.x,S,a.z);m.rotation.set(0,a.yaw,0);soldierPose(a,a.parts,m,dt,{rl:a.reloadT>0?1-a.reloadT/a.w.reload:-1})}
   if(P.mpDead&&!squadAlive()&&state==='play'){gameOver();$('overTitle').textContent='SQUAD WIPED OUT'}
   SQ.boxT=(SQ.boxT||0)-dt;if(SQ.boxT<=0){SQ.boxT=.5;renderCoopBox()}}
 // ================= INVITES (desktop app: host from the game, share a code or hotd:// link) =================
