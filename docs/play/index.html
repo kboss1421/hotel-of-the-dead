@@ -3705,7 +3705,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.17.1745';
+const GAME_VERSION=/*VER*/'2026.10.19.1628';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -5893,7 +5893,8 @@ function renderShop(){setText('bpAmt',String(BP));$('shopBP').textContent='Balan
   else if(SHOP_TAB==='kc'){head.innerHTML='KEYCHAINS <small>hang one off any gun</small>';cv.style.display='none';
     grid.innerHTML=Object.keys(KEYCHAINS).filter(k=>KEYCHAINS[k].price).map(k=>{const c=KEYCHAINS[k],own=OWN.kc.includes(k);return`<button class="btn shopItem ${k===shopKc?'sel':''}" onclick="SHOP_PICK('kc','${k}')"><img class="kcImg" alt="" src="${kcThumb(k)}"><b>${c.name}</b><small>${own?'OWNED':c.price+' BP'}</small></button>`}).join('')+
       `<p class="note">More keychains come from the event, achievements and codes.</p>`;
-    const c=KEYCHAINS[shopKc];act.innerHTML=`<img alt="" src="${kcThumb(shopKc)}" style="width:96px;height:96px"><br><b>${c.name}</b><br>`+buyBtn(c.price,OWN.kc.includes(shopKc),`shopBuyX('kc','${shopKc}')`)}
+    const c=KEYCHAINS[shopKc],kPr=kcPrimary(),kN=PRIMARIES.concat(SECONDARIES).filter(g=>KC_EQ[g]===shopKc).length;act.innerHTML=`<img alt="" src="${kcThumb(shopKc)}" style="width:96px;height:96px"><br><b>${c.name}</b><br>`+buyBtn(c.price,OWN.kc.includes(shopKc),`shopBuyX('kc','${shopKc}')`,
+      `<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px"><button class="btn red pill" onclick="kcShopEq('one','${shopKc}')">${KC_EQ[kPr]===shopKc?'ON ':'EQUIP ON '}${WEAPONS[kPr].name.toUpperCase()}</button><button class="btn pill" onclick="kcShopEq('all','${shopKc}')">EQUIP ON ALL GUNS</button>${kN?`<button class="btn pill" onclick="kcShopEq('off','${shopKc}')">REMOVE</button>`:''}<small>On ${kN} gun${kN===1?'':'s'}. To pick guns one by one: Locker, click a gun, KEYCHAIN.</small></div>`)}
   else if(SHOP_TAB==='banner'){head.innerHTML='BANNERS <small>players see yours in their killcam and when you eliminate them</small>';cv.style.display='none';kcEl();
     grid.innerHTML=Object.keys(BANNERS).filter(k=>BANNERS[k].price).map(k=>{const b=BANNERS[k],own=bannerOwned(k);return`<button class="btn shopItem ${k===shopBanner?'sel':''}" onclick="SHOP_PICK('banner','${k}')"><img class="bnrImg" alt="" src="${bannerImg(k)}"><b>${b.name}</b><small>${own?'OWNED':b.price+' BP'}</small></button>`}).join('')+
       `<p class="note">More banners come from achievements. Equip yours in the Locker.</p>`;
@@ -5902,7 +5903,15 @@ function renderShop(){setText('bpAmt',String(BP));$('shopBP').textContent='Balan
     $('codeBtn').onclick=()=>{const msg=redeemCode($('codeIn').value);$('codeMsg').textContent=msg;$('codeIn').value='';setText('bpAmt',String(BP))}}}
 function SHOP_PICK(kind,id){if(kind==='emote')shopEmote=id;else if(kind==='tracer')shopTracer=id;else if(kind==='banner')shopBanner=id;else shopKc=id;renderShop()}
 function shopBuyX(kind,id){const item=kind==='emote'?EMOTES[id]:kind==='tracer'?TR[id]:kind==='banner'?BANNERS[id]:KEYCHAINS[id];const list=kind==='emote'?OWN.emotes:kind==='tracer'?OWN.tracers:kind==='banner'?OWN.banners:OWN.kc;if(!item||list.includes(id)||BP<item.price)return;
-  BP-=item.price;LSset('hotd_bp',BP);list.push(id);if(kind==='emote'){const i=EMOTE_EQ.indexOf(null);if(i>=0)EMOTE_EQ[i]=id}saveOwn();SFX.buy();toast(item.name+' added to your Locker');renderShop()}
+  BP-=item.price;LSset('hotd_bp',BP);list.push(id);if(kind==='emote'){const i=EMOTE_EQ.indexOf(null);if(i>=0)EMOTE_EQ[i]=id}saveOwn();SFX.buy();
+  if(kind==='kc'){const g=kcPrimary();KC_EQ[g]=id;saveOwn();vm.key=null;toast(item.name+' equipped on your '+WEAPONS[g].name)}else toast(item.name+' added to your Locker');renderShop()}
+// keychains from the Shop: the current class's primary, every gun, or off again
+function kcPrimary(){const c=CLASSES[MPC.cls]||CLASSES[0];return c&&WEAPONS[c.primary]?c.primary:'ar'}
+function kcShopEq(mode,id){if(!OWN.kc.includes(id)||!KEYCHAINS[id])return;const all=PRIMARIES.concat(SECONDARIES);
+  if(mode==='one'){const g=kcPrimary();KC_EQ[g]=id;toast(KEYCHAINS[id].name+' equipped on your '+WEAPONS[g].name)}
+  else if(mode==='all'){for(const g of all)KC_EQ[g]=id;toast(KEYCHAINS[id].name+' equipped on all guns')}
+  else{for(const g in KC_EQ)if(KC_EQ[g]===id)delete KC_EQ[g];toast(KEYCHAINS[id].name+' removed')}
+  saveOwn();vm.key=null;SFX.buy();renderShop()}
 // ---- Locker: skin, emote slots, and the weapons (click one for camo, tracers, keychain)
 function renderLocker(){
   $('lockGrid').innerHTML=OWNED.map(k=>{const s=SKINS[k],eq=SKIN_ID===k;return`<button class="btn shopItem ${k===lockSel?'sel':''}" onclick="lockPick('${k}')"><b>${s.name}</b><small>${eq?'EQUIPPED':s.dev?'DEVELOPER ONLY':s.code?'CODE EXCLUSIVE':'OWNED'}</small></button>`}).join('')+
