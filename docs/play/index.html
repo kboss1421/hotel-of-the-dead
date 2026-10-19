@@ -149,9 +149,6 @@ body.mp #roundBox,body.mp #points,body.mp #perks,body.mp #field,body.mp #arWrap,
 .card2 .cn{font-size:6px;text-align:center;line-height:1.25;margin-top:2px;padding:0 2px}
 .card2 b{position:absolute;left:-7px;top:-9px;width:20px;height:20px;border-radius:50%;background:radial-gradient(#e07aff,#8a2ac8);border:2px solid #000;font-size:9px;display:flex;align-items:center;justify-content:center}
 .card2 i{position:absolute;right:3px;bottom:2px;font-size:7px;font-style:normal;color:#ccc}
-#elixirBar{position:relative;width:100%;height:14px;background:#1a0f22;border:3px solid #000;margin-top:2px}
-#elixirFill{height:100%;background:linear-gradient(#e07aff,#9a3ad8);width:50%}
-#elixirNum{position:absolute;left:6px;top:0;font-size:9px;line-height:14px;text-shadow:1px 1px 0 #000}
 #rageFx{position:fixed;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 50%,rgba(170,40,255,.65) 100%);opacity:0;pointer-events:none}
 .laptop{width:min(640px,94vw);text-align:center}
 .lscreen{background:#0c0f14;border:10px solid #2a2a30;border-radius:8px 8px 0 0;padding:10px;box-shadow:0 0 40px rgba(80,160,255,.35)}
@@ -240,7 +237,7 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
   <div id="roundBox"><div id="roundNum"></div></div>
   <div id="weapon"><div id="field"><span>SHOCK BLAST [X]</span><div><i id="fieldBar"></i></div></div><div id="wName"></div><div id="ammo"></div><div id="nades"></div></div>
   <div id="powerups"></div>
-  <div id="cards"></div><div id="rageFx"></div>
+  
   <div id="mpTop" class="hidden"></div>
   <div id="killfeed"></div>
   <div id="streakBox" class="hidden"></div>
@@ -369,7 +366,6 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
         <li><kbd>F</kbd> buy / use, <kbd>V</kbd> knife, hold <kbd>Q</kbd> / <kbd>E</kbd> to lean left / right</li>
         <li><kbd>G</kbd> lethal (press again to set off C4), <kbd>Z</kbd> tactical, <kbd>X</kbd> shock blast (zombies)</li>
         <li><kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd> scorestreaks, <kbd>Tab</kbd> scoreboard (multiplayer)</li>
-        <li><kbd>6</kbd> <kbd>7</kbd> <kbd>8</kbd> <kbd>9</kbd> play cards (costs elixir)</li>
         <li><kbd>B</kbd> emote wheel (then 1-4)</li>
         <li><kbd>T</kbd> hold to talk in online matches (change it in Settings)</li>
         <li><b>Controller</b> (Xbox / PlayStation): left stick move, click it to sprint, right stick look, <kbd>RT</kbd> fire, <kbd>LT</kbd> aim, <kbd>A</kbd> jump, <kbd>B</kbd> crouch / slide, <kbd>X</kbd> reload (hold to use, buy, plant), <kbd>Y</kbd> swap, <kbd>RB</kbd> lethal, <kbd>LB</kbd> tactical, click right stick to knife, D-pad scorestreaks, <kbd>View</kbd> scoreboard, <kbd>Menu</kbd> pause. In menus: D-pad moves, <kbd>A</kbd> selects, <kbd>B</kbd> back</li>
@@ -383,7 +379,6 @@ body.touch #touchUI:not(.mp) .tb[data-t=emote]{left:50px}body.touch #touchUI:not
   <div class="escBtns"><button class="btn red" id="escReturn">RETURN</button><button class="btn" id="escSettings">SETTINGS</button><button class="btn" id="escFs">FULLSCREEN</button><button class="btn" id="escClose">CLOSE GAME</button></div><p id="escNote" style="font-size:9px"></p></div></div>
 <div id="hubInvite" class="hidden"></div>
 <div id="achPop"></div>
-<div id="tablet" class="overlay hidden"><div class="laptop"><div class="lscreen"><div class="lbar">TACTICAL ZAP &middot; click a spot on the map to strike (stuns for 0.2s)</div><canvas id="tabCanvas"></canvas></div><div class="lbase"></div><button class="btn pill" id="tabCancel">CANCEL (ESC)</button></div></div>
 <div id="deploy" class="overlay hidden"><div class="card" style="max-width:420px;text-align:center;cursor:pointer"><h1 style="font-size:26px">CLICK TO DEPLOY</h1><p id="deployInfo"></p></div></div>
 
 <div id="wpick" class="overlay hidden" style="z-index:40"><div class="card gsCard"><div class="gsHead"><b id="wpTitle">CHOOSE PRIMARY</b><button class="btn pill" id="wpClose" type="button">BACK</button></div><div id="wpGrid"></div></div></div>
@@ -605,7 +600,7 @@ let diffKey='normal';try{diffKey=localStorage.getItem('hotd_diff')||'normal'}cat
 const DIFF=DIFFS[diffKey];
 
 // ================= world constants =================
-const MAPS={hotel:{name:'HOTEL OF THE DEAD',win:'HOTEL CLEANSED!',area:''},royale:{name:"KING'S ARENA",win:'ARENA CONQUERED!',area:'Blue Field'},frost:{name:'FROSTBITE OUTPOST',win:'OUTPOST SECURED!',area:'The Courtyard'},skyline:{name:'SKYLINE',win:'SKYLINE SECURED!',area:'Plaza Tower'},manor:{name:'GRAVEYARD MANOR',win:'MANOR PURGED!',area:'The Graveyard'},refinery:{name:'DESERT REFINERY',win:'REFINERY SECURED!',area:'The Yard'},temple:{name:'JUNGLE TEMPLE',win:'TEMPLE CLEANSED!',area:'The Plaza'},nuketown:{name:'NUKETOWN',win:'NUKETOWN SURVIVED!',area:'The Street'},shipyard:{name:'SHIPYARD',win:'SHIPYARD SECURED!',area:'Container Yard'},oldtown:{name:'OLD TOWN',win:'OLD TOWN SAVED!',area:'Town Square'},farm:{name:'FARMSTEAD',win:'FARM SAVED!',area:'The Farmyard'},downtown:{name:'DOWNTOWN',win:'CITY SAVED!',area:'Main Street'},colosseum:{name:'GRAND COLOSSEUM',win:'ARENA HELD!',area:'The Arena Floor'}};
+const MAPS={hotel:{name:'HOTEL OF THE DEAD',win:'HOTEL CLEANSED!',area:''},royale:{name:'CASTLE ARENA',win:'ARENA CONQUERED!',area:'Blue Field'},frost:{name:'FROSTBITE OUTPOST',win:'OUTPOST SECURED!',area:'The Courtyard'},skyline:{name:'SKYLINE',win:'SKYLINE SECURED!',area:'Plaza Tower'},manor:{name:'GRAVEYARD MANOR',win:'MANOR PURGED!',area:'The Graveyard'},refinery:{name:'DESERT REFINERY',win:'REFINERY SECURED!',area:'The Yard'},temple:{name:'JUNGLE TEMPLE',win:'TEMPLE CLEANSED!',area:'The Plaza'},nuketown:{name:'ATOM VILLAGE',win:'ATOM VILLAGE SURVIVED!',area:'The Street'},shipyard:{name:'SHIPYARD',win:'SHIPYARD SECURED!',area:'Container Yard'},oldtown:{name:'OLD TOWN',win:'OLD TOWN SAVED!',area:'Town Square'},farm:{name:'FARMSTEAD',win:'FARM SAVED!',area:'The Farmyard'},downtown:{name:'DOWNTOWN',win:'CITY SAVED!',area:'Main Street'},colosseum:{name:'GRAND COLOSSEUM',win:'ARENA HELD!',area:'The Arena Floor'}};
 let MAP=new URLSearchParams(location.search).get('map');
 if(!MAPS[MAP]){try{MAP=localStorage.getItem('hotd_map')}catch(e){}}
 if(!MAPS[MAP])MAP='hotel';
@@ -906,29 +901,29 @@ function labelTex(title,sub,color){return canvasTex(128,160,(g,w,h)=>{
 
 // ================= weapons =================
 const WEAPONS={
-  pistol:{name:'M1911',dmg:45,rpm:420,auto:false,mag:8,reserve:64,reload:1.4,spread:.012,pellets:1,cost:500,kind:'pistol',papName:'Infernal 1911',papExtra:{explosive:1.6,mag:12,reserve:144}},
-  smg:{name:'MP5',dmg:52,rpm:800,auto:true,mag:30,reserve:210,reload:2.0,spread:.028,pellets:1,cost:1000,kind:'smg',papName:'MP5 Overkill'},
-  shotgun:{name:'SPAS-12',dmg:55,rpm:110,auto:false,mag:8,reserve:56,reload:2.8,spread:.085,pellets:8,cost:1250,kind:'shotgun',papName:'SPAS Dragonbreath'},
-  ar:{name:'AK-47',dmg:85,rpm:600,auto:true,mag:30,reserve:240,reload:2.3,spread:.02,pellets:1,cost:1500,kind:'ar',papName:'AK Annihilator'},
-  sniper:{name:'Barrett .50',dmg:520,rpm:65,auto:false,mag:5,reserve:40,reload:3.0,spread:.003,pellets:1,pierce:4,cost:1750,kind:'sniper',papName:'Barrett Oblivion',papExtra:{explosive:2.2}},
-  lmg:{name:'M249 SAW',dmg:80,rpm:720,auto:true,mag:100,reserve:400,reload:4.2,spread:.034,pellets:1,cost:2000,kind:'lmg',papName:'SAW Devastator'},
+  pistol:{name:'Sentinel .45',dmg:45,rpm:420,auto:false,mag:8,reserve:64,reload:1.4,spread:.012,pellets:1,cost:500,kind:'pistol',papName:'Infernal Sentinel',papExtra:{explosive:1.6,mag:12,reserve:144}},
+  smg:{name:'Viper 9',dmg:52,rpm:800,auto:true,mag:30,reserve:210,reload:2.0,spread:.028,pellets:1,cost:1000,kind:'smg',papName:'Viper Venom'},
+  shotgun:{name:'Warden 12',dmg:55,rpm:110,auto:false,mag:8,reserve:56,reload:2.8,spread:.085,pellets:8,cost:1250,kind:'shotgun',papName:'Dragonbreath'},
+  ar:{name:'Kodiak 762',dmg:85,rpm:600,auto:true,mag:30,reserve:240,reload:2.3,spread:.02,pellets:1,cost:1500,kind:'ar',papName:'Kodiak Annihilator'},
+  sniper:{name:'Titan .50',dmg:520,rpm:65,auto:false,mag:5,reserve:40,reload:3.0,spread:.003,pellets:1,pierce:4,cost:1750,kind:'sniper',papName:'Titan Oblivion',papExtra:{explosive:2.2}},
+  lmg:{name:'Bulldog LMG',dmg:80,rpm:720,auto:true,mag:100,reserve:400,reload:4.2,spread:.034,pellets:1,cost:2000,kind:'lmg',papName:'Bulldog Devastator'},
   ray:{name:'Ray Blaster',dmg:900,rpm:200,auto:false,mag:20,reserve:160,reload:2.6,spread:.006,pellets:1,projectile:true,splash:2.4,cost:0,kind:'ray',papName:'Ray Blaster Mk-II',papExtra:{mag:40,reserve:240,splash:3.2}},
-  m4a1:{name:'M4A1',dmg:82,rpm:750,auto:true,mag:30,reserve:240,reload:2.1,spread:.018,pellets:1,cost:0,kind:'ar',papName:'M4 Liberator'},
-  asval:{name:'AS VAL',dmg:78,rpm:900,auto:true,mag:20,reserve:200,reload:2.0,spread:.02,pellets:1,cost:0,kind:'ar',quiet:true,papName:'Silent Night'},
-  scarh:{name:'SCAR-H',dmg:120,rpm:520,auto:true,mag:20,reserve:160,reload:2.4,spread:.016,pellets:1,cost:0,kind:'ar',papName:'Heavy Hitter'},
-  mp7:{name:'MP7',dmg:46,rpm:950,auto:true,mag:40,reserve:240,reload:1.9,spread:.03,pellets:1,cost:0,kind:'smg',papName:'MP7 Stinger'},
-  vector:{name:'Vector',dmg:44,rpm:1100,auto:true,mag:25,reserve:225,reload:1.8,spread:.03,pellets:1,cost:0,kind:'smg',papName:'Vector Vortex'},
-  p90:{name:'P90',dmg:48,rpm:900,auto:true,mag:50,reserve:250,reload:2.6,spread:.028,pellets:1,cost:0,kind:'smg',papName:'P-9000'},
-  pkm:{name:'PKM',dmg:95,rpm:650,auto:true,mag:100,reserve:300,reload:5,spread:.036,pellets:1,cost:0,kind:'lmg',papName:'Red Storm'},
-  svd:{name:'SVD Dragunov',dmg:300,rpm:180,auto:false,mag:10,reserve:60,reload:2.6,spread:.004,pellets:1,pierce:2,cost:0,kind:'sniper',papName:'Dragon Tooth'},
-  l115:{name:'L115A3',dmg:600,rpm:45,auto:false,mag:5,reserve:35,reload:3.2,spread:.002,pellets:1,pierce:4,cost:0,kind:'sniper',papName:'Longbow',papExtra:{explosive:2}},
-  m870:{name:'Model 870',dmg:70,rpm:75,auto:false,mag:6,reserve:42,reload:3,spread:.07,pellets:8,cost:0,kind:'shotgun',papName:'Boomstick 870'},
-  aa12:{name:'AA-12',dmg:38,rpm:300,auto:true,mag:20,reserve:100,reload:3,spread:.1,pellets:7,cost:0,kind:'shotgun',papName:'Auto Annihilator'},
-  deagle:{name:'Desert Eagle',dmg:260,rpm:150,auto:false,mag:7,reserve:49,reload:2,spread:.008,pellets:1,pierce:2,cost:0,kind:'revolver',papName:'Golden Eagle',papExtra:{explosive:1.2}},
-  glock18:{name:'Glock 18',dmg:38,rpm:1100,auto:true,mag:19,reserve:152,reload:1.5,spread:.03,pellets:1,cost:0,kind:'pistol',papName:'Glockenspiel'},
-  revolver:{name:'Python .357',dmg:210,rpm:160,auto:false,mag:6,reserve:54,reload:2.4,spread:.006,pellets:1,pierce:2,cost:900,kind:'revolver',papName:'Cobra Killer',papExtra:{explosive:1.4}},
-  m16:{name:'M16A4',dmg:95,rpm:900,auto:false,burst:3,mag:30,reserve:240,reload:2.2,spread:.012,pellets:1,cost:1300,kind:'m16',papName:'Skullpiercer'},
-  deathmachine:{name:'Death Machine',dmg:110,rpm:1150,auto:true,mag:150,reserve:600,reload:5,spread:.04,pellets:1,cost:0,kind:'deathmachine',papName:'Death Machine X',papExtra:{mag:250,reserve:1000}},
+  m4a1:{name:'Falcon 556',dmg:82,rpm:750,auto:true,mag:30,reserve:240,reload:2.1,spread:.018,pellets:1,cost:0,kind:'ar',papName:'Falcon Liberator'},
+  asval:{name:'Whisper 9x39',dmg:78,rpm:900,auto:true,mag:20,reserve:200,reload:2.0,spread:.02,pellets:1,cost:0,kind:'ar',quiet:true,papName:'Silent Night'},
+  scarh:{name:'Ironclad 308',dmg:120,rpm:520,auto:true,mag:20,reserve:160,reload:2.4,spread:.016,pellets:1,cost:0,kind:'ar',papName:'Heavy Hitter'},
+  mp7:{name:'Hornet PDW',dmg:46,rpm:950,auto:true,mag:40,reserve:240,reload:1.9,spread:.03,pellets:1,cost:0,kind:'smg',papName:'Hornet Swarm'},
+  vector:{name:'Razor .45',dmg:44,rpm:1100,auto:true,mag:25,reserve:225,reload:1.8,spread:.03,pellets:1,cost:0,kind:'smg',papName:'Razor Vortex'},
+  p90:{name:'Wasp 57',dmg:48,rpm:900,auto:true,mag:50,reserve:250,reload:2.6,spread:.028,pellets:1,cost:0,kind:'smg',papName:'Wasp Queen'},
+  pkm:{name:'Ox LMG',dmg:95,rpm:650,auto:true,mag:100,reserve:300,reload:5,spread:.036,pellets:1,cost:0,kind:'lmg',papName:'Red Storm'},
+  svd:{name:'Steppe DMR',dmg:300,rpm:180,auto:false,mag:10,reserve:60,reload:2.6,spread:.004,pellets:1,pierce:2,cost:0,kind:'sniper',papName:'Dragon Tooth'},
+  l115:{name:'Longbow .338',dmg:600,rpm:45,auto:false,mag:5,reserve:35,reload:3.2,spread:.002,pellets:1,pierce:4,cost:0,kind:'sniper',papName:'Longbow',papExtra:{explosive:2}},
+  m870:{name:'Ranch Pump',dmg:70,rpm:75,auto:false,mag:6,reserve:42,reload:3,spread:.07,pellets:8,cost:0,kind:'shotgun',papName:'Boomstick'},
+  aa12:{name:'Thunder Auto-12',dmg:38,rpm:300,auto:true,mag:20,reserve:100,reload:3,spread:.1,pellets:7,cost:0,kind:'shotgun',papName:'Auto Annihilator'},
+  deagle:{name:'Hand Cannon .50',dmg:260,rpm:150,auto:false,mag:7,reserve:49,reload:2,spread:.008,pellets:1,pierce:2,cost:0,kind:'revolver',papName:'Golden Cannon',papExtra:{explosive:1.2}},
+  glock18:{name:'Stinger Auto',dmg:38,rpm:1100,auto:true,mag:19,reserve:152,reload:1.5,spread:.03,pellets:1,cost:0,kind:'pistol',papName:'Hive Mind'},
+  revolver:{name:'Outlaw .357',dmg:210,rpm:160,auto:false,mag:6,reserve:54,reload:2.4,spread:.006,pellets:1,pierce:2,cost:900,kind:'revolver',papName:'Cobra Killer',papExtra:{explosive:1.4}},
+  m16:{name:'Patriot Burst',dmg:95,rpm:900,auto:false,burst:3,mag:30,reserve:240,reload:2.2,spread:.012,pellets:1,cost:1300,kind:'m16',papName:'Bonebreaker'},
+  deathmachine:{name:'Minigun',dmg:110,rpm:1150,auto:true,mag:150,reserve:600,reload:5,spread:.04,pellets:1,cost:0,kind:'deathmachine',papName:'Minigun X',papExtra:{mag:250,reserve:1000}},
   cryo:{name:'Cryo Blaster',dmg:450,rpm:240,auto:true,mag:30,reserve:180,reload:2.8,spread:.008,pellets:1,pierce:3,freeze:2.5,cost:0,kind:'cryo',papName:'Absolute Zero',papExtra:{pierce:6,freeze:4,mag:50,reserve:300}},
   volt:{name:'Volt Thrower',dmg:700,rpm:150,auto:false,mag:12,reserve:96,reload:3.0,spread:.01,pellets:1,chain:5,cost:0,kind:'volt',papName:'Volt Storm',papExtra:{chain:10,mag:24,reserve:144}},
 };
@@ -946,16 +941,16 @@ const GUMS=[
 let gumUses=0,gumRound=0;
 const MODS={napalm:{name:'Napalm Burst',c:'#ff8a30',rate:.12},deadwire:{name:'Dead Wire',c:'#6ac8ff',rate:.15},cryofreeze:{name:'Cryofreeze',c:'#bfe8ff',rate:.18}};
 Object.assign(WEAPONS,{
-  kar98k:{name:'Kar98k',dmg:400,rpm:50,auto:false,mag:5,reserve:40,reload:3,spread:.0025,pellets:1,pierce:3,cost:0,kind:'sniper',irons:true,papName:'Wolfsangel',papExtra:{explosive:1.5}},
-  fal:{name:'FN FAL',dmg:110,rpm:300,auto:false,mag:20,reserve:160,reload:2.4,spread:.012,pellets:1,pierce:2,cost:0,kind:'ar',papName:'Falcon Strike'},
-  aug:{name:'Steyr AUG',dmg:84,rpm:680,auto:true,mag:30,reserve:240,reload:2.4,spread:.017,pellets:1,cost:0,kind:'ar',papName:'Augmented'},
-  hk433:{name:'HK433',dmg:82,rpm:700,auto:true,mag:30,reserve:240,reload:2.2,spread:.018,pellets:1,cost:0,kind:'ar',papName:'Kilo Killer'},
-  mac10:{name:'MAC-10',dmg:42,rpm:1100,auto:true,mag:30,reserve:240,reload:1.9,spread:.034,pellets:1,cost:0,kind:'smg',papName:'Mac Attack'},
-  ump45:{name:'UMP45',dmg:50,rpm:600,auto:true,mag:25,reserve:200,reload:2.1,spread:.024,pellets:1,cost:0,kind:'smg',papName:'UMP Overdrive'},
-  mg34:{name:'MG34',dmg:100,rpm:900,auto:true,mag:50,reserve:300,reload:5.5,spread:.036,pellets:1,cost:0,kind:'lmg',papName:'Buzzsaw'},
-  saiga12:{name:'Saiga-12',dmg:40,rpm:300,auto:true,mag:8,reserve:64,reload:2.8,spread:.09,pellets:8,cost:0,kind:'shotgun',papName:'Siberian Storm'},
-  m9:{name:'Beretta M9',dmg:40,rpm:450,auto:false,mag:15,reserve:120,reload:1.6,spread:.013,pellets:1,cost:0,kind:'pistol',papName:'Nine Lives'},
-  usp45:{name:'USP .45',dmg:48,rpm:400,auto:false,mag:12,reserve:96,reload:1.6,spread:.012,pellets:1,cost:0,kind:'pistol',papName:'Silent Partner'}});
+  kar98k:{name:'Old Guard Bolt',dmg:400,rpm:50,auto:false,mag:5,reserve:40,reload:3,spread:.0025,pellets:1,pierce:3,cost:0,kind:'sniper',irons:true,papName:'Wolfsangel',papExtra:{explosive:1.5}},
+  fal:{name:'Ranger 308',dmg:110,rpm:300,auto:false,mag:20,reserve:160,reload:2.4,spread:.012,pellets:1,pierce:2,cost:0,kind:'ar',papName:'Falcon Strike'},
+  aug:{name:'Pioneer Bullpup',dmg:84,rpm:680,auto:true,mag:30,reserve:240,reload:2.4,spread:.017,pellets:1,cost:0,kind:'ar',papName:'Augmented'},
+  hk433:{name:'Vanguard AR',dmg:82,rpm:700,auto:true,mag:30,reserve:240,reload:2.2,spread:.018,pellets:1,cost:0,kind:'ar',papName:'Vanguard Vengeance'},
+  mac10:{name:'Ripper',dmg:42,rpm:1100,auto:true,mag:30,reserve:240,reload:1.9,spread:.034,pellets:1,cost:0,kind:'smg',papName:'Ripper Rampage'},
+  ump45:{name:'Bruiser .45',dmg:50,rpm:600,auto:true,mag:25,reserve:200,reload:2.1,spread:.024,pellets:1,cost:0,kind:'smg',papName:'Bruiser Overdrive'},
+  mg34:{name:'Trench MG',dmg:100,rpm:900,auto:true,mag:50,reserve:300,reload:5.5,spread:.036,pellets:1,cost:0,kind:'lmg',papName:'Buzzsaw'},
+  saiga12:{name:'Volga Auto-12',dmg:40,rpm:300,auto:true,mag:8,reserve:64,reload:2.8,spread:.09,pellets:8,cost:0,kind:'shotgun',papName:'Siberian Storm'},
+  m9:{name:'Service 9',dmg:40,rpm:450,auto:false,mag:15,reserve:120,reload:1.6,spread:.013,pellets:1,cost:0,kind:'pistol',papName:'Nine Lives'},
+  usp45:{name:'Officer .45',dmg:48,rpm:400,auto:false,mag:12,reserve:96,reload:1.6,spread:.012,pellets:1,cost:0,kind:'pistol',papName:'Silent Partner'}});
 for(const k in WEAPONS)WEAPONS[k].id=k;
 const BOX_POOL=[['kar98k',2],['fal',2],['aug',2],['hk433',2],['mac10',2],['ump45',2],['mg34',1],['saiga12',2],['m9',2],['usp45',2],['smg',3],['shotgun',3],['ar',3],['m16',2],['revolver',2],['sniper',2],['lmg',2],['m4a1',2],['asval',2],['scarh',2],['mp7',2],['vector',2],['p90',2],['pkm',2],['svd',2],['l115',1],['m870',2],['aa12',2],['deagle',2],['glock18',2],['ray',1],['volt',1],['cryo',1],['deathmachine',1]];
 
@@ -1322,7 +1317,7 @@ function buildItems(){
         const base=new THREE.Mesh(geoRBox,lam(0x3a3440));base.scale.set(1,1.1,1);base.position.y=.55;m.add(base);
         const up=new THREE.Mesh(geoRBox,new THREE.MeshLambertMaterial({color:0x5a2a8a,emissive:0x40106a}));up.scale.set(.9,.6,.9);up.position.y=1.4;m.add(up);
         it.rollers=[];for(let i=0;i<3;i++){const r=new THREE.Mesh(geoBox,lam(0x888899));r.scale.set(.95,.12,.12);r.position.set(0,1.25+i*.15,.46);m.add(r);it.rollers.push(r)}
-        const sg=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:canvasTex(256,64,g=>{g.fillStyle='#16081f';g.fillRect(0,0,256,64);g.strokeStyle='#c070ff';g.lineWidth=4;g.strokeRect(2,2,252,60);g.fillStyle='#e8c0ff';g.font='bold 28px monospace';g.textAlign='center';g.fillText('PACK-A-PUNCH',128,32);g.font='16px monospace';g.fillText('5000 pts',128,54)},true)}));
+        const sg=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:canvasTex(256,64,g=>{g.fillStyle='#16081f';g.fillRect(0,0,256,64);g.strokeStyle='#c070ff';g.lineWidth=4;g.strokeRect(2,2,252,60);g.fillStyle='#e8c0ff';g.font='bold 28px monospace';g.textAlign='center';g.fillText('ARC FORGE',128,32);g.font='16px monospace';g.fillText('5000 pts',128,54)},true)}));
         sg.scale.set(1.2,.3,1);sg.position.set(0,1.95,.2);m.add(sg);
         it.glow=up;papMachine=it;
       }else if(d.kind==='armor'){
@@ -1707,7 +1702,7 @@ function spawnZombie(type){
 function spawnBoss(){
   const m=makeBoss();boss={type:'boss',mesh:m.g,parts:m,x:BOSS_POS[0],z:BOSS_POS[1],f:BOSS_F,hp:40000+R.n*3000,yaw:Math.PI,dead:false,atkCD:2,spitT:4,lungeT:9,summonT:12,state:'walk',st:0,phase:0,yOff:0,lungeHit:false,stuck:0};
   boss.nid=++ZC.nid;boss.maxHp=boss.hp;boss.mesh.position.set(boss.x,surf(BOSS_F),boss.z);scene.add(boss.mesh);enemies.push(boss);bossSpawned=true;
-  SFX.roar();showMsg('THE BROODMOTHER AWAKENS',{hotel:'Kill her to cleanse the hotel',royale:'Kill her to conquer the arena',frost:'Kill her to secure the outpost',skyline:'Kill her to secure the skyline',manor:'Kill her to purge the manor',refinery:'Kill her to secure the refinery',temple:'Kill her to cleanse the temple',nuketown:'Kill her to save Nuketown',shipyard:'Kill her to secure the shipyard',oldtown:'Kill her to save the town',farm:'Kill her to save the farm',downtown:'Kill her to save the city'}[MAP],4);
+  SFX.roar();showMsg('THE BROODMOTHER AWAKENS',{hotel:'Kill her to cleanse the hotel',royale:'Kill her to conquer the arena',frost:'Kill her to secure the outpost',skyline:'Kill her to secure the skyline',manor:'Kill her to purge the manor',refinery:'Kill her to secure the refinery',temple:'Kill her to cleanse the temple',nuketown:'Kill her to save Atom Village',shipyard:'Kill her to secure the shipyard',oldtown:'Kill her to save the town',farm:'Kill her to save the farm',downtown:'Kill her to save the city'}[MAP],4);
 }
 function killEnemy(e,head,src){
   if(e.type==='net'){netHit(e,150,head,src);return}
@@ -1886,7 +1881,7 @@ function fire(){
     if(d.chain){if(hits.length){const first=hits[0];anyHit=true;const pt=o.clone().addScaledVector(dir,first.t);addLine(mz,pt,0x9af4ff,.15,.15);chain(first.e,pt,d);}else{addLine(mz,end,0x9af4ff,.12,.15);emit(end.x,end.y,end.z,0x9af4ff,6,2)}continue}
     for(const h of hits){if(n--<=0)break;anyHit=true;const pt=o.clone().addScaledVector(dir,h.t);end=pt;
       if(d.freeze){if(h.e.type==='boss')h.e.chillUntil=now+d.freeze;else{if(h.e.frozenUntil>now)SFX.hit();h.e.frozenUntil=now+d.freeze}}
-      damageEnemy(h.e,(MPM?mpDamage(d,h.t):(d.oneShot&&h.e.type==='boss'?2500:d.dmg*(h.e.frozenUntil>now&&!d.freeze?1.5:1)))*rageMul(),h.head||P.dramaUntil>now,'gun');emit(pt.x,pt.y,pt.z,d.freeze?0xbfe8ff:h.e.type==='boss'?0x3a8a1a:0x8a0a0a,4,2,.07,.4);
+      damageEnemy(h.e,(MPM?mpDamage(d,h.t):(d.oneShot&&h.e.type==='boss'?2500:d.dmg*(h.e.frozenUntil>now&&!d.freeze?1.5:1))),h.head||P.dramaUntil>now,'gun');emit(pt.x,pt.y,pt.z,d.freeze?0xbfe8ff:h.e.type==='boss'?0x3a8a1a:0x8a0a0a,4,2,.07,.4);
       if(d.explosive)explode(pt.x,pt.y,pt.z,d.explosive,d.dmg*.8);
       if(w.mod&&Math.random()<MODS[w.mod].rate)procMod(w.mod,h.e,pt)}
     if(!hits.length||(d.pierce&&n>0)){emit(end.x-dir.x*.05,end.y-dir.y*.05,end.z-dir.z*.05,0xb0a090,3,1.5,.06,.4);if(d.explosive&&!hits.length)explode(end.x-dir.x*.3,end.y-dir.y*.3,end.z-dir.z*.3,d.explosive,d.dmg*.8)}
@@ -1972,13 +1967,13 @@ function interactLabel(it){
   if(it.kind==='zone')return`Press F to open ${it.zone.name} [${it.zone.cost}]`;
   if(it.kind==='wall'){const wp=WEAPONS[it.gun];const own=P.guns.find(g=>g.id===it.gun);if(own){const c=own.pap?2500:Math.floor(wp.cost/2);return`Press F to buy ammo for ${def(own).name} [${c}]`}return`Press F to buy ${wp.name} [${wp.cost}]`}
   if(it.kind==='perk'){const pk=PERKS[it.perk];if(P.perks.has(it.perk))return`${pk.name} active`;return`Press F to drink ${pk.name} [${pk.cost}]  -  ${pk.desc}`}
-  if(it.kind==='pap'){if(papState.busy)return'Pack-a-Punch is working...';const w=curGun();if(!w)return'';const L=w.pap|0;if(L>=3)return'Weapon is fully upgraded (III)';return`Press F to Pack-a-Punch ${def(w).name} to tier ${['I','II','III'][L]} [${PAP_COST[L]}]`}
-  if(it.kind==='gum'){if(gumRound!==R.n){gumRound=R.n;gumUses=0}if(gumUses>=3)return'GobbleGum: come back next round';return`Press F for a GobbleGum [${500*(gumUses+1)}]`}
+  if(it.kind==='pap'){if(papState.busy)return'The Arc Forge is working...';const w=curGun();if(!w)return'';const L=w.pap|0;if(L>=3)return'Weapon is fully upgraded (III)';return`Press F to forge ${def(w).name} to tier ${['I','II','III'][L]} [${PAP_COST[L]}]`}
+  if(it.kind==='gum'){if(gumRound!==R.n){gumRound=R.n;gumUses=0}if(gumUses>=3)return'Lucky Gum: come back next round';return`Press F for a Lucky Gum [${500*(gumUses+1)}]`}
   if(it.kind==='mod'){const w=curGun();if(!w)return'';return`Press F to apply a random Ammo Mod to ${def(w).name} [2500]`+(w.mod?`  (now: ${MODS[w.mod].name})`:'')}
   if(it.kind==='radio'){if(exfil)return exfil.phase==='go'?'':'Exfil inbound...';if(R.n<10)return'Radio: Exfil available from round 10';return'Press F to call Exfil (survive 60s, then evac)'}
   if(it.kind==='armor'){if(P.armor>=150)return'Armor is full';return`Press F to buy Armor Plates [1500]`}
   if(it.kind==='trap'){if(it.activeUntil>now)return'Trap is active!';if(it.readyAt>now)return`Trap cooling down (${Math.ceil(it.readyAt-now)}s)`;return'Press F to activate Electric Trap [1000]'}
-  if(it.kind==='box'){if(it.state==='idle')return'Press F for the Mystery Box [950]';if(it.state==='rolling')return'';if(it.state==='ready')return`Press F to take ${WEAPONS[it.choice].name}`}
+  if(it.kind==='box'){if(it.state==='idle')return'Press F for the Mystery Crate [950]';if(it.state==='rolling')return'';if(it.state==='ready')return`Press F to take ${WEAPONS[it.choice].name}`}
   return'';
 }
 const papState={busy:false};
@@ -1992,7 +1987,7 @@ function interact(){
   if(it.kind==='perk'){if(P.perks.has(it.perk))return;const pk=PERKS[it.perk];if(P.perks.size>=5)return;if(!spend(pk.cost))return;
     P.busyT=1.2;SFX.glug();later(1.1,()=>{P.perks.add(it.perk);if(P.perks.size>=4)unlock('perks4');if(it.perk==='tonic'){P.maxHp=200;P.hp=200}renderPerks();showMsg(pk.name.toUpperCase(),pk.desc,2)});return}
   if(it.kind==='pap'){const w=curGun();if(!w||(w.pap|0)>=3||papState.busy)return;if(!spend(PAP_COST[w.pap|0]))return;papState.busy=true;P.busyT=2.6;SFX.pap();
-    later(2.5,()=>{w.pap=(w.pap|0)+1;unlock('pap');if(w.pap>=3)unlock('pap3');const d=def(w);w.mag=d.mag;w.res=d.reserve;papState.busy=false;showMsg(d.name.toUpperCase(),'Pack-a-Punched!',2.5)});return}
+    later(2.5,()=>{w.pap=(w.pap|0)+1;unlock('pap');if(w.pap>=3)unlock('pap3');const d=def(w);w.mag=d.mag;w.res=d.reserve;papState.busy=false;showMsg(d.name.toUpperCase(),'Forged at the Arc Forge!',2.5)});return}
   if(it.kind==='gum'){if(gumRound!==R.n){gumRound=R.n;gumUses=0}if(gumUses>=3)return;if(!spend(500*(gumUses+1)))return;gumUses++;
     const tot=GUMS.reduce((a,b)=>a+b.w,0);let r=Math.random()*tot,g=GUMS[0];for(const x of GUMS){r-=x.w;if(r<=0){g=x;break}}
     SFX.powerup();showMsg(g.name.toUpperCase(),g.desc,2.5);
@@ -2125,7 +2120,7 @@ function drawMinimap(){mg.drawImage(mmBase[P.floor],0,0);
   mg.save();mg.translate(P.x*MS,P.z*MS);mg.rotate(-P.yaw+Math.PI);mg.fillStyle='#4f4';mg.beginPath();mg.moveTo(0,5);mg.lineTo(-3.5,-3);mg.lineTo(3.5,-3);mg.closePath();mg.fill();mg.restore()}
 function statsHTML(){const acc=P.shotsFired?Math.round(P.hits/P.shotsFired*100):0;return`Round reached: ${R.n}<br>Kills: ${P.kills} &nbsp; Headshots: ${P.heads}<br>Accuracy: ${acc}%<br>Points: ${P.points}<br>Best round: ${Math.max(best,R.n)}`}
 function updateHUD(dt){updateTouchUI();
-  const w=curGun();if(MPM)updateMPHUD();updateCardsHUD();
+  const w=curGun();if(MPM)updateMPHUD();
   {const dd=w&&def(w);const on=dd&&dd.ret&&P.adsK>.85&&!P.mpDead;const r=$('reticle');r.className=on?dd.ret:'';r.style.opacity=on?1:0}
   setText('roundNum',R.n?String(R.n):'');setText('points',String(P.points));
   if(w){const d=def(w);setText('wName',d.name+(w.mod?`<br><small style="color:${MODS[w.mod].c};font-size:9px">${MODS[w.mod].name}</small>`:''));$('wName').className=w.pap?'pap':'';setText('ammo',`${w.mag} <small>/ ${w.res}</small>`)}
@@ -2140,7 +2135,7 @@ function updateHUD(dt){updateTouchUI();
   $('webbed').style.opacity=P.slowUntil>now?.8:0;
   hitT=Math.max(0,hitT-dt);$('hit').style.opacity=hitT>0?1:0;
   const it=state==='play'?nearestInteract():null;setText('prompt',P.busyT>0?'':interactLabel(it));
-  let pu='';if(P.rageUntil>now)pu+=`<span style="color:#d080ff">RAGE ${Math.ceil(P.rageUntil-now)}</span>`;if(P.hogUntil>now)pu+=`<span style="color:#ffb070">HOG RIDER ${Math.ceil(P.hogUntil-now)}s (7 to hop off)</span>`;if(P.burnedUntil>now)pu+=`<span style="color:#ff9a30">BURNED OUT ${Math.ceil(P.burnedUntil-now)}</span>`;if(P.dramaUntil>now)pu+=`<span style="color:#e040e0">HEAD DRAMA ${Math.ceil(P.dramaUntil-now)}</span>`;if(exfil&&exfil.phase==='hold')pu+=`<span style="color:#7f7">EXFIL ${Math.ceil(exfil.t)}s</span>`;else if(exfil&&exfil.phase==='go')pu+=`<span style="color:#7f7">GET TO EVAC!</span>`;if(P.instaUntil>now)pu+=`<span>INSTA-KILL ${Math.ceil(P.instaUntil-now)}</span>`;if(P.doubleUntil>now)pu+=`<span>DOUBLE POINTS ${Math.ceil(P.doubleUntil-now)}</span>`;setText('powerups',pu);
+  let pu='';if(P.burnedUntil>now)pu+=`<span style="color:#ff9a30">BURNED OUT ${Math.ceil(P.burnedUntil-now)}</span>`;if(P.dramaUntil>now)pu+=`<span style="color:#e040e0">HEAD DRAMA ${Math.ceil(P.dramaUntil-now)}</span>`;if(exfil&&exfil.phase==='hold')pu+=`<span style="color:#7f7">EXFIL ${Math.ceil(exfil.t)}s</span>`;else if(exfil&&exfil.phase==='go')pu+=`<span style="color:#7f7">GET TO EVAC!</span>`;if(P.instaUntil>now)pu+=`<span>INSTA-KILL ${Math.ceil(P.instaUntil-now)}</span>`;if(P.doubleUntil>now)pu+=`<span>DOUBLE POINTS ${Math.ceil(P.doubleUntil-now)}</span>`;setText('powerups',pu);
   const showBoss=boss&&!boss.remove&&P.floor===boss.f;$('bossWrap').classList.toggle('hidden',!showBoss);if(showBoss)$('bossBar').style.width=clamp(boss.hp/boss.maxHp*100,0,100)+'%';
   const sniperScoped=w&&scoped(def(w))&&P.adsK>.9;$('scope').style.opacity=sniperScoped?1:0;$('scope').classList.toggle('therm',!!(sniperScoped&&def(w).thermal));updateThermal();
   $('cross').style.opacity=P.adsK>.5?0:1;progHud(w,dt);
@@ -2259,7 +2254,6 @@ function updatePlayer(dt){
   let spd=(sprint?6.4*(hasWZ('double')?1.12:1):4.3)*(P.perks.has('swift')?1.2:1)*(P.slowUntil>now?.45:1)*(P.ads?.6:1)*(P.crouched?(hasWZ('double')?.7:.52):1)*(hasWZ('resolute')&&now-P.lastHit<2?1.2:1)*(P.leanK?1-.2*Math.abs(P.leanK):1);
   if(MPM&&curGun()){const cd=def(curGun());spd*=mpW(cd).mob*(cd.mobMul||1)}
   if(WADE&&cellAt(f,Math.floor(P.x),Math.floor(P.z))===T.WATER){spd*=.65;if(Math.hypot(P.vx,P.vz)>1&&Math.random()<.35)emit(P.x+rnd(-.3,.3),P.y+.05,P.z+rnd(-.3,.3),0xbfe4ff,2,1.4,.06,.35,9)}
-  if(P.hogUntil>now)spd=sprint?10.5:8.5;
   const acc=P.onGround?14:4;if(P.slideT>0){P.vx=P.slideDX*P.slideV;P.vz=P.slideDZ*P.slideV}else{P.vx+=(fx*spd-P.vx)*Math.min(1,acc*dt);P.vz+=(fz*spd-P.vz)*Math.min(1,acc*dt)}
   slideMove(P,P.vx*dt,P.vz*dt,.3,f,P.y,false);
   const airL=!P.onGround;P.vy-=25*dt;const vyL=P.vy;P.y+=P.vy*dt;const gnd=groundAt(f,P.x,P.z,.3,P.y);
@@ -2326,7 +2320,7 @@ function update(dt){
   updateElevator(dt);
   if((MPM||ZC.on||SQ.on)&&P.mpDead){deadCam(dt)}else{updatePlayer(dt);updateWeapon(dt)}
   if(MPM)updateMP(dt);else if(ZC.on){netUpdate(dt);coopUpdate(dt)}else if(!travel){updateRound(dt);updateEnemies(dt);updateSquad(dt)}
-  updateCards(dt);updateProjectiles(dt);updateParticles(dt);updateLines(dt);updateDrops(dt);updateItems(dt);
+  updateProjectiles(dt);updateParticles(dt);updateLines(dt);updateDrops(dt);updateItems(dt);
   if(!travel)for(let f=0;f<NF;f++)floorGroups[f].visible=f===P.floor||f===P.floor+1;
   for(const e of enemies)e.mesh.visible=e.f===P.floor&&(e.type!=='net'||(e.seen&&(!e.dead||(e.deadT||0)<3)));
   if(Math.random()<.01)roomLights[(Math.random()*4)|0].intensity=rnd(.2,.6);for(const l of roomLights)l.intensity+=(1-l.intensity)*dt*3;
@@ -2350,7 +2344,7 @@ function frame(t){
 
 // ================= CONTROLLER (Xbox / PlayStation / any standard gamepad) =================
 // Left stick move (L3 sprint), right stick look, RT fire, LT aim, A jump, B crouch / slide, X reload (hold to use / plant / buy),
-// Y swap, RB lethal, LB tactical, R3 knife, D-pad scorestreaks (zombies: up shock blast, others cards), View scoreboard, Menu pause.
+// Y swap, RB lethal, LB tactical, R3 knife, D-pad scorestreaks (zombies: up shock blast), View scoreboard, Menu pause.
 // In menus the D-pad / left stick moves a highlight, A presses, B goes back, LB / RB or the right stick scroll.
 const GP={on:false,prev:[],mx:0,my:0,sprint:false,k:{},navT:0,focus:null,lastShot:-9,hurt:0,id:''};
 const GP_DZ=.17;
@@ -2383,7 +2377,7 @@ function gpPoll(dt){const g=gpPad();if(!g){if(GP.on){for(const c in GP.k)gpKey(c
     if(hit(3)&&P.guns.length>1){P.cur=(P.cur+1)%P.guns.length;P.reloadT=0;P.swapT=.35;P.burstLeft=0}
     if(hit(5))throwGrenade();if(hit(4))throwTactical();if(hit(11))melee();
     if(MPM){if(hit(12))useStreak(0);if(hit(14))useStreak(1);if(hit(15))useStreak(2);if(hit(13)&&typeof toggleEmoteWheel==='function')toggleEmoteWheel()}
-    else{if(hit(12))fieldUpgrade();if(hit(14))playCard(0);if(hit(15))playCard(1);if(hit(13))playCard(2)}
+    else{if(hit(12))fieldUpgrade()}
     gpKey('Tab',cur[8]);
     if(hit(9))pause();
     // rumble on shots and when you get hurt
@@ -2509,7 +2503,7 @@ function gameOver(){
   if(R.n>best){best=R.n;try{localStorage.setItem('hotd_best_'+MAP,best)}catch(e){}}
   SFX.roundEnd();$('overTitle').textContent='YOU DIED';$('overStats').innerHTML=statsHTML();$('continueBtn').classList.add('hidden');$('over').classList.remove('hidden');
 }
-document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&state==='play'&&!NOLOCK&&!P.mpDead&&!CARD.tablet)pause()});
+document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&state==='play'&&!NOLOCK&&!P.mpDead)pause()});
 addEventListener('mousemove',e=>{if(state!=='play'||P.menuOpen||(!document.pointerLockElement&&!NOLOCK))return;const s=.0022*settings.sens*(P.adsK>.5?(settings.adsSens==null?.6:settings.adsSens)*Math.sqrt(curZoom()):1);P.yaw-=e.movementX*s;P.pitch=clamp(P.pitch-e.movementY*s,-1.5,1.5)});
 addEventListener('mousedown',e=>{if(state!=='play'||P.mpDead||P.menuOpen)return;if(!document.pointerLockElement&&!NOLOCK){lockPointer();return}if(e.button===0){P.trigger=true;fire()}else if(e.button===2)P.ads=true});
 addEventListener('mouseup',e=>{if(e.button===0)P.trigger=false;else if(e.button===2)P.ads=false});
@@ -2517,7 +2511,6 @@ addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('wheel',e=>{if(state==='play'&&!P.menuOpen&&P.guns.length>1){P.cur=(P.cur+1)%P.guns.length;P.reloadT=0;P.swapT=.35;P.burstLeft=0}});
 addEventListener('keydown',e=>{
   keys[e.code]=true;if(state==='play'&&(e.ctrlKey||e.code==='ControlLeft'||e.code==='ControlRight'))e.preventDefault();
-  if(CARD.tablet&&e.code==='Escape'){closeTablet();return}
   if(e.code==='Escape'){
     if(state==='title'&&!$('title').classList.contains('hidden')){const gs=!$('gsmith').classList.contains('hidden'),wp=!$('wpick').classList.contains('hidden');if(gs){closeGunsmith();return}if(wp){closeWeaponPicker();return}toggleEscMenu(!escMenuOpen());return}
     if(state==='play'&&!document.pointerLockElement&&!P.mpDead){pause();return}
@@ -2534,7 +2527,7 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyZ')throwTactical();
   if(e.code==='KeyX')fieldUpgrade();
   if(MPM&&(e.code==='Digit3'||e.code==='Digit4'||e.code==='Digit5'))useStreak(+e.code.slice(5)-3);
-  if(e.code==='Digit6'||e.code==='Digit7'||e.code==='Digit8'||e.code==='Digit9')playCard(+e.code.slice(5)-6);
+  
   if(e.code==='Tab')e.preventDefault();
   if((e.code==='Digit1'||e.code==='Digit2')&&P.guns.length>1){const i=e.code==='Digit1'?0:1;if(i!==P.cur&&P.guns[i]){P.cur=i;P.reloadT=0;P.swapT=.35;P.burstLeft=0}}
   if(e.code==='Space')e.preventDefault();
@@ -2693,10 +2686,10 @@ function buildRoyale(){
       const back=fb(x+.5,S+1,z+.5,alongX?1:.05,2,alongX?.05:1,new THREE.MeshStandardMaterial({color:0x2a1a10,transparent:true,opacity:.5,flatShading:!SMOOTH()}));zn.meshes.push(back)}
     ZONES.push(zn)};
   const rowCells=(x0,x1,z)=>{const l=[];for(let x=x0;x<=x1;x++)l.push([x,z]);return l};
-  Z('bcourt',"Blue King's Court",750,rowCells(22,25,58),[1,59,46,70]);
+  Z('bcourt','Blue Keep',750,rowCells(22,25,58),[1,59,46,70]);
   Z('wbridge','West Bridge',1000,rowCells(9,14,37),[9,34,14,36]);
   Z('ebridge','East Bridge',1000,rowCells(33,38,37),[33,34,38,36]);
-  Z('rcourt',"Red King's Court",2500,rowCells(22,25,13),[1,1,46,12],true);
+  Z('rcourt','Red Keep',2500,rowCells(22,25,13),[1,1,46,12],true);
   expandMap();
   bakeGroundAO(gg,g);
   if(settings.quality!=='low')addGrass(grp,g,S,(x,z)=>!isRiver(x,z)&&!isPath(x,z)&&z!==33&&z!==38,7000);
@@ -3495,7 +3488,7 @@ nuketown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
   for(const[x,z]of[[56,14.5],[28.5,49.5],[6.5,9.5]])barrel(x,z,0x3a5a3a);
   // welcome sign at the cul-de-sac
   mark(2,25,2,30,T.HOUSE);box(2,25,2,30,0,.6,0x8a7a64);for(const z of[25.4,30.6])fb(2.5,S+1.4,z,.15,2.8,.15,0x5a4a3a);
-  TOWN.sign(K,3.1,27.5,Math.PI/2,5.4,2,2.2,g=>{g.fillStyle='#f2ead8';g.fillRect(0,0,256,95);g.strokeStyle='#c03020';g.lineWidth=6;g.strokeRect(5,5,246,85);g.fillStyle='#c03020';g.font='bold 20px sans-serif';g.textAlign='center';g.fillText('WELCOME TO',128,32);g.font='bold 40px sans-serif';g.fillText('NUKETOWN',128,72);g.fillStyle='#3a3a3a';g.font='12px sans-serif';g.fillText('POPULATION: 0',128,88)});
+  TOWN.sign(K,3.1,27.5,Math.PI/2,5.4,2,2.2,g=>{g.fillStyle='#f2ead8';g.fillRect(0,0,256,95);g.strokeStyle='#c03020';g.lineWidth=6;g.strokeRect(5,5,246,85);g.fillStyle='#c03020';g.font='bold 20px sans-serif';g.textAlign='center';g.fillText('WELCOME TO',128,32);g.font='bold 40px sans-serif';g.fillText('ATOM VILLAGE',128,72);g.fillStyle='#3a3a3a';g.font='12px sans-serif';g.fillText('POPULATION: 0',128,88)});
 },
 // ---------------- SHIPYARD: a container port at dusk with warehouses, a dock office, a customs house and a dry dock
 shipyard(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=K;const tk=makeTownKit(K.grp,K.g,S,LP);
@@ -3783,7 +3776,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.19.1639';
+const GAME_VERSION=/*VER*/'2026.10.19.1647';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -3880,7 +3873,7 @@ const MPW={m4a1:{dmg:27,range:40,mob:1.02},asval:{dmg:30,range:26,mob:1.05},scar
 function mpW(d){return MPW[d.id]||MPW[d.kind]||MPW.ar}
 function mpDamage(d,dist){if(d.oneShot)return 999;const k=mpW(d);let v=k.dmg*(d.dmgMul||1);if(dist>k.range*(d.rangeMul||1))v*=.7;return v}
 const PRIMARIES=['ar','m4a1','hk433','aug','asval','scarh','fal','m16','smg','mp7','mac10','ump45','vector','p90','lmg','pkm','mg34','sniper','kar98k','svd','l115','shotgun','m870','saiga12','aa12'],SECONDARIES=['pistol','m9','usp45','glock18','revolver','deagle'];
-const LETHALS={frag:{name:'Frag Grenade',fuse:1.8},semtex:{name:'Semtex',fuse:1.1,sticky:true}};
+const LETHALS={frag:{name:'Frag Grenade',fuse:1.8},semtex:{name:'Sticky Grenade',fuse:1.1,sticky:true}};
 // ================= LETHALS & TACTICALS (Warzone-style) =================
 Object.assign(LETHALS,{
   molotov:{name:'Molotov',fuse:9,impact:true,fire:true,c:0x8a5a2a,desc:'Shatters on impact into a pool of fire.'},
@@ -3895,8 +3888,8 @@ const TACTICALS={
   stun:{name:'Stun Grenade',fuse:1.4,c:0x6a7a8a,desc:'Freezes enemies in place for a few seconds.'},
   smoke:{name:'Smoke Grenade',fuse:1.2,c:0x8a8a8a,desc:'A thick cloud nobody can see through.'},
   decoy:{name:'Decoy Grenade',fuse:1,c:0x5a6a4a,desc:'Fakes gunfire to pull enemies toward it.'},
-  heartbeat:{name:'Heartbeat Sensor',instant:true,desc:'Shows every enemy within 40 m on your minimap.'},
-  snapshot:{name:'Snapshot Grenade',fuse:1.2,c:0x3a6a9a,desc:'Reveals enemies near where it lands.'}};
+  heartbeat:{name:'Pulse Scanner',instant:true,desc:'Shows every enemy within 40 m on your minimap.'},
+  snapshot:{name:'Scan Grenade',fuse:1.2,c:0x3a6a9a,desc:'Reveals enemies near where it lands.'}};
 const FIRES=[],TRAPS=[],SMOKES=[];
 function throwGrenade(){
   if(P.busyT>0||travel||P.mpDead)return;
@@ -4220,7 +4213,6 @@ function botPerceive(b){
   if(!P.mpDead&&b.team!==P.team)c.push({kind:'player',x:P.x,z:P.z,y:P.y+1.3,ref:'player'});
   for(const o of MP.bots)if(o!==b&&!o.dead&&o.team!==b.team)c.push({kind:'bot',x:o.x,z:o.z,y:S+1.3,ref:o});
   for(const s of MP.sentries)if(s.team!==b.team&&s.hp>0)c.push({kind:'sentry',x:s.x,z:s.z,y:S+.9,ref:s});
-  for(const u of CARD.units)if(!u.dead&&u.team!==b.team)c.push({kind:'unit',x:u.x,z:u.z,y:S+.8,ref:u});
   if(NET.on)for(const r of NET.remote.values())if(!r.dead&&r.seen&&!r.bot&&(!MP.tdm||r.team!==b.team))c.push({kind:'net',x:r.x,z:r.z,y:S+1.3,ref:r});
   for(const t of c){const dx=t.x-b.x,dz=t.z-b.z,d=Math.hypot(dx,dz);if(d>65||d>=bd)continue;
     const recent=b.hurtBy&&now-b.hurtBy.t<2.5&&b.hurtBy.ref===t.ref;const dot=(dx*fx+dz*fz)/(d||1);if(dot<.15&&!recent&&d>4)continue;
@@ -4297,7 +4289,7 @@ function feed(a,at,w,v,vt,head){const el=document.createElement('div');const c=t
   el.innerHTML=`<span class="${c(at)}">${a}</span> <span class="w">[${w}${head?' &#9673;':''}]</span> <span class="${c(vt)}">${v}</span>`;$('killfeed').prepend(el);
   while($('killfeed').children.length>6)$('killfeed').lastChild.remove();setTimeout(()=>el.remove(),5200)}
 function mpPlayerDeath(){
-  if(P.mpDead)return;mdDeath();dismountHog(true);P.mpDead=true;P.mp.deaths++;P.mp.streakPts=0;P.mp.life=0;P.trigger=false;P.ads=false;P.adsK=0;MP.deadT=0;
+  if(P.mpDead)return;mdDeath();P.mpDead=true;P.mp.deaths++;P.mp.streakPts=0;P.mp.life=0;P.trigger=false;P.ads=false;P.adsK=0;MP.deadT=0;
   const k=P.lastAttacker&&now-P.lastHit<3?P.lastAttacker:null;if(k)k.lifeK=(k.lifeK|0)+1;
   if(NET.on)NET.send({t:'died',by:k?(k.type==='net'?k.id:k.netId!=null?k.netId:null):null,w:P.lastWeapon||'',head:!!P.lastHead,x:+P.x.toFixed(2),z:+P.z.toFixed(2)});
   else if(k){k.kills++;k.score+=100;k.streakPts+=100;if(MP.tdm&&!MP.snd)MP.score[k.team]++;feed(k.name,k.team,P.lastWeapon||k.w.name,'You',P.team,false);botStreakCheck(k)}
@@ -4352,12 +4344,12 @@ const STREAK_FN={
 // ================= MORE SCORESTREAKS =================
 Object.assign(STREAKS,{
   cuav:{name:'Counter-UAV',cost:500,d:'Jams enemy UAVs for 30 seconds.'},
-  care:{name:'Care Package',cost:600,d:'Drops a crate with a random scorestreak inside.'},
+  care:{name:'Supply Drop',cost:600,d:'Drops a crate with a random scorestreak inside.'},
   cluster:{name:'Cluster Strike',cost:1000,d:'Carpets the spot you aim at with bomblets.'},
   emp:{name:'EMP',cost:1500,d:'Knocks out enemy sentries, aircraft and UAVs, and stuns enemies.'},
   gunship:{name:'Gunship',cost:1700,d:'A heavy gunship circles the map for a minute.'},
   jugg:{name:'Juggernaut',cost:1900,d:'Heavy armor: 400 health until you die.'},
-  nuke:{name:'Tactical Nuke',cost:3000,d:'Ten seconds later, everyone else dies and your side wins.'}});
+  nuke:{name:'Doomsday Strike',cost:3000,d:'Ten seconds later, everyone else dies and your side wins.'}});
 Object.assign(STREAKS.uav,{d:'Shows enemies on your minimap for 30 seconds.'});Object.assign(STREAKS.sentry,{d:'An automatic turret where you look.'});
 Object.assign(STREAKS.airstrike,{d:'A jet bombs a line through where you aim.'});Object.assign(STREAKS.mortar,{d:'Three volleys of mortar shells on the enemy.'});Object.assign(STREAKS.heli,{d:'A helicopter hunts enemies for 45 seconds.'});
 MP.cuav={};MP.cares=[];
@@ -4380,9 +4372,9 @@ Object.assign(STREAK_FN,{
     MP.gship={team,t:0,life:60,fireCD:0,mesh:g,rotor,r2,ang:0,dmg:48,rate:.16,alt:30,acc:.5};showMsg('GUNSHIP INBOUND','',1.8)},
   jugg(team){P.jugg=true;P.maxHp=400;P.hp=400;showMsg('JUGGERNAUT','400 health until you die',2);SFX.powerup()},
   nuke(team){showMsg('TACTICAL NUKE INBOUND','10 seconds...',3);for(let i=1;i<=10;i++)later(i,()=>{if(i<10)sTone(880-i*40,.25,'square',.12,600);else{
-      flashScreen&&flashScreen('#ffffff',3);SFX.boom();later(.3,SFX.boom);shake=1.2;for(const b of MP.bots)if(!b.dead&&b.team!==team)damageBot(b,9999,false,'streak',null,'Tactical Nuke');
-      if(NET.on)for(const r of NET.remote.values())if(!r.dead&&(!MP.tdm||r.team!==team))netHit(r,9999,false,'streak','Tactical Nuke');
-      if(!NET.on&&MP.snd){sndEnd(team,'TACTICAL NUKE')}else if(!NET.on){if(MP.tdm)MP.score[team]=Math.max(MP.score[team],MP.limit,(MP.score[team==='blue'?'red':'blue']||0)+1);else P.mp.kills=Math.max(P.mp.kills,MP.limit);P.mp.score+=1000;later(2,endMatch)}}})}});
+      flashScreen&&flashScreen('#ffffff',3);SFX.boom();later(.3,SFX.boom);shake=1.2;for(const b of MP.bots)if(!b.dead&&b.team!==team)damageBot(b,9999,false,'streak',null,'Doomsday Strike');
+      if(NET.on)for(const r of NET.remote.values())if(!r.dead&&(!MP.tdm||r.team!==team))netHit(r,9999,false,'streak','Doomsday Strike');
+      if(!NET.on&&MP.snd){sndEnd(team,'DOOMSDAY STRIKE')}else if(!NET.on){if(MP.tdm)MP.score[team]=Math.max(MP.score[team],MP.limit,(MP.score[team==='blue'?'red':'blue']||0)+1);else P.mp.kills=Math.max(P.mp.kills,MP.limit);P.mp.score+=1000;later(2,endMatch)}}})}});
 // care packages fall, land, and give their streak to whoever of your side walks up first
 function updateCares(dt){const S=surf(0);for(let i=MP.cares.length-1;i>=0;i--){const c=MP.cares[i];if(c.y>0){c.y=Math.max(0,c.y-dt*9);c.g.position.y=S+c.y}else c.life-=dt;
     if(c.y===0&&c.team===P.team&&!P.mpDead&&Math.hypot(P.x-c.x,P.z-c.z)<1.6){const pool=Object.keys(STREAKS).filter(k=>k!=='care'&&k!=='nuke');const id=pick(pool);P.mp.earned.push(id);
@@ -4552,7 +4544,7 @@ const SND_WHY={time:'TIME EXPIRED: the bomb was never planted',boom:'TARGET DEST
 function sndDeathClasses(){const dc=$('deathClasses');dc.innerHTML='';CLASSES.forEach((c,i)=>{const b=document.createElement('button');b.className='btn pill mapBtn'+(i===MPC.cls?' sel':'');b.textContent=c.name;
     b.onclick=()=>{MPC.cls=i;saveMPC();for(const x of dc.children)x.classList.toggle('sel',x===b)};dc.appendChild(b)})}
 // sit out the rest of a round you joined late (or the server already counts you out)
-function sndBench(){if(P.mpDead)return;dismountHog(true);P.mpDead=true;P.trigger=false;P.ads=false;P.adsK=0;MP.deadT=0;
+function sndBench(){if(P.mpDead)return;P.mpDead=true;P.trigger=false;P.ads=false;P.adsK=0;MP.deadT=0;
   $('deathBy').textContent='Round in progress: you play from the next round';sndDeathClasses();kcEl();kcClear();KC.spec=0;document.body.classList.add('spec','respawn')}
 function sndBenchBot(o){o.dead=true;o.deadT=9;o.target=null;o.sndHold=false}
 function netSnd(m){let s=MP.snd;if(!s||!s.net){startSnd(true);s=MP.snd}const b=s.bomb;
@@ -4631,7 +4623,7 @@ function renderZm(){pills($('mapPick'),Object.keys(MAPS).filter(k=>k!=='colosseu
   $('mapDesc').textContent=MAP_INFO[zmMap].desc;$('tips').innerHTML=MAP_INFO[zmMap].tips.map(t=>`<li>${t}</li>`).join('');
   let b=0;try{b=+localStorage.getItem('hotd_best_'+zmMap)||0}catch(e){}$('best').textContent=b?'Best round on this map: '+b:''}
 function renderMp(){
-  pills($('mpMapPick'),[['royale',"KING'S ARENA"],['frost','FROSTBITE OUTPOST'],['skyline','SKYLINE'],['manor','GRAVEYARD MANOR'],['refinery','DESERT REFINERY'],['temple','JUNGLE TEMPLE'],['nuketown','NUKETOWN'],['shipyard','SHIPYARD'],['oldtown','OLD TOWN']].concat(typeof EXTRA_MP_MAPS!=='undefined'?EXTRA_MP_MAPS:[]),MPC.map,id=>{MPC.map=id;saveMPC();if(id!==MAP||MODE!=='mp')goURL({map:id,mode:'mp',menu:'Mp'});else renderMp()});
+  pills($('mpMapPick'),[['royale','CASTLE ARENA'],['frost','FROSTBITE OUTPOST'],['skyline','SKYLINE'],['manor','GRAVEYARD MANOR'],['refinery','DESERT REFINERY'],['temple','JUNGLE TEMPLE'],['nuketown','ATOM VILLAGE'],['shipyard','SHIPYARD'],['oldtown','OLD TOWN']].concat(typeof EXTRA_MP_MAPS!=='undefined'?EXTRA_MP_MAPS:[]),MPC.map,id=>{MPC.map=id;saveMPC();if(id!==MAP||MODE!=='mp')goURL({map:id,mode:'mp',menu:'Mp'});else renderMp()});
   pills($('mpModePick'),[['tdm','TEAM DEATHMATCH'],['ffa','FREE-FOR-ALL'],['snd','SEARCH & DESTROY'],['zm','CO-OP ZOMBIES']],MPC.gametype,id=>{MPC.gametype=id;saveMPC();renderMp()});
   pills($('mpSkillPick'),Object.keys(SKILLS).map(k=>[k,SKILLS[k].name.toUpperCase()]),MPC.skill,id=>{MPC.skill=id;saveMPC();renderMp()});
   pills($('mpClassPick'),CLASSES.map((c,i)=>[i,c.name]),MPC.cls,i=>{MPC.cls=i;saveMPC();renderMp()});
@@ -4682,10 +4674,10 @@ const ACH=[
   {id:'hs50',name:'Headhunter',desc:'Get 50 headshot kills',stat:'hs',goal:50},
   {id:'round10',name:'Survivor',desc:'Reach round 10 in Zombies'},
   {id:'round25',name:'Marathon Runner',desc:'Reach round 25 in Zombies'},
-  {id:'pap',name:'Packing Heat',desc:'Pack-a-Punch a weapon'},
-  {id:'pap3',name:'Maximum Overdrive',desc:'Pack-a-Punch a weapon to tier III'},
+  {id:'pap',name:'Packing Heat',desc:'Upgrade a weapon at the Arc Forge'},
+  {id:'pap3',name:'Full Power',desc:'Upgrade a weapon to tier III at the Arc Forge'},
   {id:'perks4',name:'Perk Connoisseur',desc:'Hold 4 perks at once'},
-  {id:'shopper',name:'Mystery Shopper',desc:'Use the Mystery Box 10 times',stat:'box',goal:10},
+  {id:'shopper',name:'Mystery Shopper',desc:'Use the Mystery Crate 10 times',stat:'box',goal:10},
   {id:'boss',name:'Spider Squasher',desc:'Kill the Broodmother'},
   {id:'exfil',name:'Get Out Alive',desc:'Exfil successfully'},
   {id:'globe',name:'Globetrotter',desc:'Play Zombies on three different maps',stat:'maps',goal:3},
@@ -4821,7 +4813,7 @@ function netMsg(m){
     addLine(new THREE.Vector3(m.x,m.y,m.z),new THREE.Vector3(m.ex,m.ey,m.ez),0xffe0a0,.05);emit(m.x,m.y,m.z,0xffd070,1,.4,.14,.06,0);
     SFX.shot(m.k||'ar',{x:m.x,z:m.z,id:m.i,q:m.q})}
   else if(m.t==='fx'){if(m.k==='rtc'){if(m.to===NET.id)voiceSignal(m);return}if(m.k==='emote'){playRemoteEmote(NET.remote.get(m.from),m.id);return}if(m.k==='boom')blastVisual(m.x,m.z,m.y);else if(m.k==='blast')blastVisual(m.x,m.z);else if(m.k==='jet')jetVisual(m.x,m.z,new THREE.Vector3(m.dx,0,m.dz));
-    else if(m.k==='sentry')sentryMesh(m.x,m.z,m.team,true);else if(m.k==='heli')STREAK_FN.heli(m.team,true);else if(m.k==='units')ghostUnits(m.from,m.u||[]);else if(m.k==='rage')spawnRage(m.x,m.z,m.team,false);else if(m.k==='zap')zapVisual(m.x,m.z)}
+    else if(m.k==='sentry')sentryMesh(m.x,m.z,m.team,true);else if(m.k==='heli')STREAK_FN.heli(m.team,true);}
 }
 function startOnline(w){
   initAudio();if(AC&&AC.state==='suspended')AC.resume();clearLobby();
@@ -4841,7 +4833,7 @@ function netUpdate(dt){sendBotStates(dt);
     if(r.dead){r.deadT=(r.deadT||0)+dt;deathPose(r,r.parts,r.mesh,r.deadT);r.mesh.position.set(r.x,S-(r.deadT>1.2?(r.deadT-1.2)*.8:0),r.z);if(r.deadT>3)r.mesh.visible=false;continue}
     const ox=r.x,oz=r.z;r.x+=(r.tx-r.x)*k;r.z+=(r.tz-r.z)*k;r.y+=(r.ty-r.y)*k;r.yaw+=angTo(r.yaw,r.tyaw)*k;
     const mv=Math.hypot(r.x-ox,r.z-oz);r.phase+=mv*2.6;const sw=Math.sin(r.phase)*.55*Math.min(1,mv/dt/3);r.parts.legL.rotation.x=sw;r.parts.legR.rotation.x=-sw;
-    if(r.hog&&!r.hogM){r.hogM=makeHog().g;r.hogM.position.y=-.85;r.mesh.add(r.hogM)}if(r.hogM)r.hogM.visible=!!r.hog;
+    
     r.mesh.visible=r.seen;r.mesh.position.set(r.x,r.y+(r.hog?.85:0),r.z);r.lean=(r.lean||0)+((r.tlean||0)-(r.lean||0))*Math.min(1,dt*12);r.mesh.rotation.set(0,r.yaw,-r.lean*.2);soldierPose(r,r.parts,r.mesh,dt,{cr:r.crouch,sl:r.slide,sp:r.sprint,rl:r.rl})}
 }
 function netHit(r,dmg,head,src,wname){if(r.dead||(MP.tdm&&r.team===P.team))return;if(hasWZ('scout'))r.revealUntil=now+3;if(src==='explosion')dmg=Math.min(dmg*.3,130);if(head&&src!=='explosion')dmg*=1.5;
@@ -5063,7 +5055,7 @@ async function currentInvite(){if(window.hotd){const h=await window.hotd.hostInf
 const HOSTC=Object.assign({map:'royale',mode:'tdm',bots:1},(()=>{try{return JSON.parse(localStorage.getItem('hotd_hostc'))||{}}catch(e){return{}}})());
 const MODE_NAMES={tdm:'Team Deathmatch',ffa:'Free-for-all',zm:'Co-op Zombies',snd:'Search and Destroy'};
 function renderHost(){if(!window.hotd)return;$('hostBox').classList.remove('hidden');
-  const maps=[['royale',"KING'S ARENA"],['frost','FROSTBITE OUTPOST'],['skyline','SKYLINE'],['manor','GRAVEYARD MANOR'],['refinery','DESERT REFINERY'],['temple','JUNGLE TEMPLE'],['nuketown','NUKETOWN'],['shipyard','SHIPYARD'],['oldtown','OLD TOWN'],['farm','FARMSTEAD'],['downtown','DOWNTOWN'],['colosseum','GRAND COLOSSEUM'],['hotel','HOTEL (ZOMBIES)']];
+  const maps=[['royale','CASTLE ARENA'],['frost','FROSTBITE OUTPOST'],['skyline','SKYLINE'],['manor','GRAVEYARD MANOR'],['refinery','DESERT REFINERY'],['temple','JUNGLE TEMPLE'],['nuketown','ATOM VILLAGE'],['shipyard','SHIPYARD'],['oldtown','OLD TOWN'],['farm','FARMSTEAD'],['downtown','DOWNTOWN'],['colosseum','GRAND COLOSSEUM'],['hotel','HOTEL (ZOMBIES)']];
   if(HOSTC.map==='hotel')HOSTC.mode='zm';if(HOSTC.map==='colosseum'&&HOSTC.mode==='zm')HOSTC.mode='tdm';
   pills($('hostMapPick'),maps,HOSTC.map,id=>{HOSTC.map=id;LSset('hotd_hostc',HOSTC);renderHost()});
   pills($('hostModePick'),HOSTC.map==='hotel'?[['zm','CO-OP ZOMBIES']]:HOSTC.map==='colosseum'?[['tdm','TEAM DEATHMATCH'],['ffa','FREE-FOR-ALL'],['snd','SEARCH & DESTROY']]:[['tdm','TEAM DEATHMATCH'],['ffa','FREE-FOR-ALL'],['snd','SEARCH & DESTROY'],['zm','CO-OP ZOMBIES']],HOSTC.mode,id=>{if(id==='snd'&&HOSTC.mode!=='snd')HOSTC.map='colosseum';HOSTC.mode=id;LSset('hotd_hostc',HOSTC);renderHost()});
@@ -5091,29 +5083,29 @@ async function renderPauseInvite(){const el=$('pauseInvite');if(!el)return;if(!N
   if(code)$('pInvCopy').onclick=()=>{copyText(inviteMessage(code));toast('Invite copied')}}
 // ================= PERKS (Warzone-style: one from each of three slots, set per class) =================
 const WZP=[
-  {double:{n:'Double Time',d:'Sprint 12% faster and move faster while crouched.'},
-   scavenger:{n:'Scavenger',d:'Kills refill a magazine of reserve ammo. Every 2 kills gives back a lethal.'},
-   eod:{n:'E.O.D.',d:'Take 55% less damage from grenades, airstrikes and mortars.'},
-   quickfix:{n:'Quick Fix',d:'Kills heal 40 health right away and restart your regeneration.'},
-   cold:{n:'Cold-Blooded',d:'Enemy bots take twice as long to lock on to you, and enemy airstrikes never target you.'}},
-  {ghost:{n:'Ghost',d:'Enemy UAVs cannot see you.'},
-   fasthands:{n:'Fast Hands',d:'Reload 33% faster and swap weapons twice as fast.'},
-   restock:{n:'Restock',d:'Get a lethal back every 25 seconds (up to 3).'},
-   hardened:{n:'Battle Hardened',d:'Stuns from Shock Strike last 80% shorter.'},
-   overkill:{n:'Overkill',d:'Carry a second primary weapon instead of a pistol.'},
-   gunfighter:{n:'Gunfighter',d:'Your primary weapon can carry 8 attachments instead of 5.'}},
-  {highalert:{n:'High Alert',d:'The screen edge pulses toward enemies aiming at you from out of view.'},
-   tracker:{n:'Tracker',d:'Enemies leave red footprints you can follow.'},
-   shrapnel:{n:'Shrapnel',d:'Spawn with an extra lethal. Your explosives deal 25% more damage.'},
-   resolute:{n:'Resolute',d:'Move 20% faster for 2 seconds after taking damage.'},
-   scout:{n:'Combat Scout',d:'Enemies you shoot show on your minimap for 3 seconds.'}}];
+  {double:{n:'Fleet Foot',d:'Sprint 12% faster and move faster while crouched.'},
+   scavenger:{n:'Pack Rat',d:'Kills refill a magazine of reserve ammo. Every 2 kills gives back a lethal.'},
+   eod:{n:'Blast Padding',d:'Take 55% less damage from grenades, airstrikes and mortars.'},
+   quickfix:{n:'Second Wind',d:'Kills heal 40 health right away and restart your regeneration.'},
+   cold:{n:'Low Profile',d:'Enemy bots take twice as long to lock on to you, and enemy airstrikes never target you.'}},
+  {ghost:{n:'Phantom',d:'Enemy UAVs cannot see you.'},
+   fasthands:{n:'Nimble Fingers',d:'Reload 33% faster and swap weapons twice as fast.'},
+   restock:{n:'Refill',d:'Get a lethal back every 25 seconds (up to 3).'},
+   hardened:{n:'Iron Nerves',d:'Stuns from Shock Strike last 80% shorter.'},
+   overkill:{n:'Two Primaries',d:'Carry a second primary weapon instead of a pistol.'},
+   gunfighter:{n:'Gear Head',d:'Your primary weapon can carry 8 attachments instead of 5.'}},
+  {highalert:{n:'Sixth Sense',d:'The screen edge pulses toward enemies aiming at you from out of view.'},
+   tracker:{n:'Bloodhound',d:'Enemies leave red footprints you can follow.'},
+   shrapnel:{n:'Demolitions',d:'Spawn with an extra lethal. Your explosives deal 25% more damage.'},
+   resolute:{n:'Grit',d:'Move 20% faster for 2 seconds after taking damage.'},
+   scout:{n:'Spotter',d:'Enemies you shoot show on your minimap for 3 seconds.'}}];
 const WZ_DEFAULT=[['double','ghost','highalert'],['quickfix','fasthands','tracker'],['cold','ghost','scout'],['eod','restock','resolute'],['scavenger','overkill','shrapnel']];
 function classPerks(c,i){if(!Array.isArray(c.perks)||c.perks.length!==3||c.perks.some((p,s)=>!WZP[s][p]))c.perks=(WZ_DEFAULT[i]||WZ_DEFAULT[0]).slice();return c.perks}
 const hasWZ=k=>MPM&&!!P.wz&&P.wz.has(k);
 function wzName(k){for(const s of WZP)if(s[k])return s[k].n;return k}
 function wzSpawn(c){P.wz=new Set(classPerks(c,CLASSES.indexOf(c)));P.wzKills=0;P.restockT=25;if(hasWZ('shrapnel'))P.grenades++}
 function wzOnKill(){if(hasWZ('quickfix')){P.hp=Math.min(P.maxHp,P.hp+40);P.lastHit=-99}
-  if(hasWZ('scavenger')){for(const w of P.guns){const d=def(w);w.res+=d.mag}P.wzKills++;if(P.wzKills%2===0&&P.grenades<3){P.grenades++;toast('Scavenger: +1 lethal')}}}
+  if(hasWZ('scavenger')){for(const w of P.guns){const d=def(w);w.res+=d.mag}P.wzKills++;if(P.wzKills%2===0&&P.grenades<3){P.grenades++;toast('Pack Rat: +1 lethal')}}}
 const TRACKS=[];const trackMat=new THREE.MeshBasicMaterial({color:0xff2a2a,transparent:true,opacity:.55,depthWrite:false});
 function wzUpdate(dt){if(!P.wz||P.mpDead)return;
   if(hasWZ('restock')){P.restockT-=dt;if(P.restockT<=0){P.restockT=25;if(P.grenades<3){P.grenades++;toast('Restock: +1 lethal')}}}
@@ -5172,7 +5164,7 @@ function gsRefresh(){const id=GS.id,w=WEAPONS[id],sn=w.kind==='sniper';const AMX
   {const cv=$('gsCanvas');GS.model.rotation.y=0;gsFrame(GS.model,cv.clientWidth||600,cv.clientHeight||300)}
   $('gsTitle').textContent=w.name+(gunUnlocked(id)?'':' (LOCKED: LEVEL '+gunLv(id)+')');$('gsSub').textContent=(REAL[id]?REAL[id].cal+' · ':'')+({ar:'Assault rifle',smg:'SMG',lmg:'LMG',sniper:'Sniper',shotgun:'Shotgun',m16:'Burst rifle',pistol:'Pistol',revolver:'Handgun'}[w.kind]||'');
   gsTabsRender();if(GS.tab!=='att'){$('gsCount').textContent='';gsCosmeticPanel();return}
-  const n=attCount(GS.att);$('gsCount').innerHTML=`${n} / ${AMX} attachments${AMX>ATT_MAX?' (Gunfighter)':''}`+prWpnHTML(id);
+  const n=attCount(GS.att);$('gsCount').innerHTML=`${n} / ${AMX} attachments${AMX>ATT_MAX?' (Gear Head)':''}`+prWpnHTML(id);
   $('gsSlots').innerHTML=ATT_SLOTS.map(([slot,label])=>{const cur=GS.att[slot]||'none';const lock=false;
     return`<div class="gsSlot"><div class="gsSlotName">${label}</div><div class="gsOpts">${Object.keys(ATT[slot]).filter(k=>!ATT[slot][k].sniper||sn).map(k=>{const a=ATT[slot][k],sel=cur===k;const full=!sel&&k!=='none'&&cur==='none'&&n>=AMX;
       const lk=!attUnlocked(id,slot,k);return`<button class="gsOpt${sel?' sel':''}${lk?' locked':''}" ${lock||full||lk?'disabled':''} data-slot="${slot}" data-k="${k}" title="${lk?'Reach weapon level '+attLv(slot,k)+' to unlock':full?'Remove an attachment first (max '+AMX+')':''}"><b>${lk?'&#128274; ':''}${slot==='optic'?optLabel(id,k):a.name}</b>${k!=='none'?`<small>${lk?'<span class="dn">WEAPON LEVEL '+attLv(slot,k)+'</span> ':''}${attEffects(a)}</small>`:''}</button>`}).join('')}</div></div>`}).join('');
@@ -5330,151 +5322,7 @@ function buildSkyline(){
   renderer.shadowMap.needsUpdate=true;
 }
 
-// ================= CARDS (elixir deck) =================
-const CARDS=[
-  {id:'skel',name:'Skeleton Army',cost:3,color:'#7a6ad8'},
-  {id:'hog',name:'Hog Rider',cost:4,color:'#d8803a'},
-  {id:'zap',name:'Zap',cost:2,color:'#3aa0ff'},
-  {id:'lumber',name:'Lumberjack',cost:4,color:'#c83a3a'}];
-const CARD={elixir:5,units:[],rage:[],ghosts:new Map(),rghost:[],sendT:0,tablet:false,uid:0,flows:new Map()};
-WEAPONS.hogpistol={name:'Hog Pistol',dmg:99999,rpm:220,auto:false,mag:6,reserve:72,reload:1.1,spread:.003,pellets:1,cost:0,kind:'pistol',oneShot:true,papName:'Hog Pistol'};
-MPW.hogpistol={dmg:999,range:60,mob:1};
-function cardIcon(id){return(()=>{const c=document.createElement('canvas');c.width=c.height=48;const g=c.getContext('2d');
-  if(id==='skel'){g.fillStyle='#f0ece0';g.fillRect(12,8,24,20);g.fillRect(16,28,16,8);g.fillStyle='#1a1a1a';g.fillRect(16,14,6,6);g.fillRect(26,14,6,6);g.fillRect(22,22,4,3);for(let i=0;i<4;i++)g.fillRect(17+i*4,30,2,6)}
-  else if(id==='hog'){g.fillStyle='#d88a7a';g.fillRect(6,18,36,20);g.fillStyle='#e8a090';g.fillRect(30,14,14,18);g.fillStyle='#b86a5a';g.fillRect(40,20,6,8);g.fillStyle='#1a1a1a';g.fillRect(34,18,3,3);
-    g.fillStyle='#f0ece0';g.fillRect(40,28,3,6);g.fillStyle='#8a5a4a';g.fillRect(10,38,5,7);g.fillRect(30,38,5,7);g.fillStyle='#3a2a1a';g.fillRect(14,8,12,10);g.fillStyle='#e8c070';g.fillRect(12,6,16,4)}
-  else if(id==='zap'){g.fillStyle='#bfe8ff';g.beginPath();g.moveTo(28,4);g.lineTo(12,26);g.lineTo(22,26);g.lineTo(16,44);g.lineTo(36,18);g.lineTo(25,18);g.lineTo(32,4);g.closePath();g.fill();g.strokeStyle='#3aa0ff';g.lineWidth=2;g.stroke()}
-  else{g.fillStyle='#7a4a22';g.fillRect(21,8,6,36);g.fillStyle='#c8ccd0';g.beginPath();g.moveTo(27,8);g.lineTo(42,6);g.lineTo(44,22);g.lineTo(27,20);g.closePath();g.fill();g.fillStyle='#a03030';g.fillRect(8,30,12,10);g.fillStyle='#8a5a2a';g.fillRect(8,22,12,8)}
-  return c.toDataURL()})()}
-function renderCardsHUD(){const h=$('cards');h.innerHTML=CARDS.map((c,i)=>`<div class="card2" id="card${i}" style="--cc:${c.color}"><img src="${cardIcon(c.id)}"><span class="cn">${c.name}</span><b>${c.cost}</b><i>${i+6}</i></div>`).join('')+'<div id="elixirBar"><div id="elixirFill"></div><span id="elixirNum">5</span></div>'}
-function placeCardsHUD(){const top=(mm.height||105)+30;$('cards').style.top=top+'px';$('killfeed').style.top=(top+96)+'px'}
-function updateCardsHUD(){for(let i=0;i<CARDS.length;i++){const el=$('card'+i);if(!el)continue;const c=CARDS[i];const ok=CARD.elixir>=c.cost;el.classList.toggle('ok',ok);el.classList.toggle('on',(c.id==='hog'&&P.hogUntil>now)||(c.id==='zap'&&CARD.tablet))}
-  $('elixirFill').style.width=(CARD.elixir*10)+'%';setText('elixirNum',String(Math.floor(CARD.elixir)))}
-function unitTeam(){return MPM?P.team:'player'}
-function unitFoes(team){if(MPM)return hostiles(team);return enemies.filter(e=>!e.dead&&e.f===P.floor&&(e.type==='zombie'||e.type==='spider'||e.type==='boss')&&e.state!=='rise')}
-function unitHit(t,dmg,name){if(t.type==='net')netHit(t,dmg,false,'streak',name);else if(t.type==='bot')damageBot(t,dmg,false,'streak',null,name);else damageEnemy(t,dmg,false,'unit')}
-function playCard(i){const c=CARDS[i];if(!c||P.mpDead||travel||state!=='play')return;
-  if(c.id==='hog'&&P.hogUntil>now){dismountHog();return}
-  if(CARD.elixir<c.cost){toast(`${c.name} needs ${c.cost} elixir`);SFX.deny();return}
-  if(CARD_FN[c.id]()===false)return;CARD.elixir-=c.cost;SFX.card();showMsg(c.name.toUpperCase(),'',1.2)}
-SFX.card=()=>{sNoise(.25,2000,.25,'bandpass');[0,.07,.14].forEach((d,i)=>sTone([660,880,1100][i],.12,'triangle',.1,null,d))};
-SFX.oink=()=>{sTone(260,.18,'sawtooth',.18,180);sTone(300,.2,'square',.1,200,.18)};
-// ---- unit models
-const boneMat=lam(0xe8e4d8),boneDark=lam(0x26221e),steelMat=lam(0xb8bcc4);
-function makeSkeleton(){const g=new THREE.Group();const B=(m,w,h,d,x,y,z,p=g)=>{const me=new THREE.Mesh(geoRBox,m);me.scale.set(w,h,d);me.position.set(x,y,z);p.add(me);return me};
-  const legL=new THREE.Group(),legR=new THREE.Group();legL.position.set(-.1,.55,0);legR.position.set(.1,.55,0);B(boneMat,.08,.55,.08,0,-.27,0,legL);B(boneMat,.08,.55,.08,0,-.27,0,legR);g.add(legL,legR);
-  B(boneMat,.3,.1,.16,0,.6,0);for(let i=0;i<3;i++)B(boneMat,.32,.05,.18,0,.72+i*.1,0);B(boneMat,.06,.4,.06,0,.85,-.04);
-  const head=B(boneMat,.28,.26,.26,0,1.2,0);B(boneDark,.07,.07,.02,-.06,1.22,.135);B(boneDark,.07,.07,.02,.06,1.22,.135);B(boneDark,.1,.03,.02,0,1.12,.135);
-  const armR=new THREE.Group();armR.position.set(.2,1,0);B(boneMat,.06,.45,.06,0,-.2,0,armR);B(steelMat,.04,.5,.04,0,-.42,.22,armR).rotation.x=Math.PI/2;armR.rotation.x=-1.2;g.add(armR);
-  const armL=new THREE.Group();armL.position.set(-.2,1,0);B(boneMat,.06,.45,.06,0,-.2,0,armL);armL.rotation.x=-.9;g.add(armL);
-  g.traverse(o=>{if(o.isMesh)o.castShadow=true});return{g,legL,legR,armR,armL,head}}
-function makeLumberjack(){const g=new THREE.Group();const B=(m,w,h,d,x,y,z,p=g)=>{const me=new THREE.Mesh(geoRBox,m);me.scale.set(w,h,d);me.position.set(x,y,z);p.add(me);return me};
-  const plaid=new THREE.MeshLambertMaterial({map:canvasTex(8,8,gx=>{for(let y=0;y<8;y++)for(let x=0;x<8;x++){px(gx,x,y,(x%4<2)^(y%4<2)?180:110,(x%4<2)^(y%4<2)?30:20,30)}})});
-  const legL=new THREE.Group(),legR=new THREE.Group();legL.position.set(-.16,.75,0);legR.position.set(.16,.75,0);B(lam(0x2a3a6a),.28,.75,.3,0,-.37,0,legL);B(lam(0x2a3a6a),.28,.75,.3,0,-.37,0,legR);g.add(legL,legR);
-  B(plaid,.68,.8,.42,0,1.15,0);B(lam(0x5a3a1a),.7,.1,.44,0,.8,0);
-  const head=B(solSkin,.5,.48,.48,0,1.8,0);B(lam(0x7a4a22),.52,.28,.12,0,1.62,.22);B(lam(0x7a4a22),.54,.14,.5,0,2.06,0);B(lam(0xb03030),.56,.2,.56,0,2.14,0);B(boneDark,.08,.06,.02,-.11,1.86,.245);B(boneDark,.08,.06,.02,.11,1.86,.245);
-  const armR=new THREE.Group();armR.position.set(.44,1.45,0);B(plaid,.22,.6,.24,0,-.28,0,armR);const axe=new THREE.Group();axe.position.set(0,-.6,0);armR.add(axe);
-  B(lam(0x7a4a22),.07,.08,1.1,0,0,.45,axe);B(steelMat,.06,.38,.3,0,.12,.95,axe);armR.rotation.x=-.6;g.add(armR);
-  const armL=new THREE.Group();armL.position.set(-.44,1.45,0);B(plaid,.22,.6,.24,0,-.28,0,armL);armL.rotation.x=-.3;g.add(armL);
-  g.traverse(o=>{if(o.isMesh)o.castShadow=true});return{g,legL,legR,armR,armL,head}}
-function makeHog(){const g=new THREE.Group();const pink=lam(0xd08a78),dark=lam(0x8a5a4a);const B=(m,w,h,d,x,y,z,p=g)=>{const me=new THREE.Mesh(geoRBox,m);me.scale.set(w,h,d);me.position.set(x,y,z);p.add(me);return me};
-  B(pink,.9,.75,1.6,0,.75,0);B(lam(0xe0a090),.62,.6,.55,0,.9,.95);B(lam(0xb86a5a),.36,.28,.12,0,.85,1.27);B(lam(0xf0ece0),.06,.18,.06,-.2,.7,1.25);B(lam(0xf0ece0),.06,.18,.06,.2,.7,1.25);
-  B(boneDark,.08,.08,.04,-.17,1.03,1.23);B(boneDark,.08,.08,.04,.17,1.03,1.23);B(dark,.16,.2,.08,-.24,1.25,.8);B(dark,.16,.2,.08,.24,1.25,.8);
-  const legs=[];for(const[x,z]of[[-.3,.55],[.3,.55],[-.3,-.55],[.3,-.55]]){const l=new THREE.Group();l.position.set(x,.45,z);B(dark,.2,.45,.2,0,-.22,0,l);g.add(l);legs.push(l)}
-  B(lam(0x5a3a1a),.75,.12,.6,0,1.16,-.05);g.traverse(o=>{if(o.isMesh)o.castShadow=true});return{g,legs}}
-// ---- spawn / update units
-function spawnUnit(kind,x,z,team){const isS=kind==='skel';const m=isS?makeSkeleton():makeLumberjack();
-  const u={id:++CARD.uid,kind,team,x,z,yaw:P.yaw+Math.PI,hp:isS?(MPM?25:120):(MPM?180:900),dmg:isS?(MPM?8:60):(MPM?10:180),rate:isS?.9:.7,reach:isS?.9:1.2,speed:isS?4.2:5.2,r:isS?.18:.28,
-    life:isS?30:45,atkCD:.3,mesh:m.g,parts:m,phase:Math.random()*6,swing:0,retarget:0,target:null,dead:false,name:isS?'Skeleton Army':'Lumberjack',stunUntil:0};
-  u.mesh.position.set(x,surf(P.floor),z);scene.add(u.mesh);CARD.units.push(u);return u}
-function freeCellNear(x,z){for(let r=0;r<4;r+=.5)for(let a=0;a<8;a++){const tx=x+Math.cos(a*.785)*r,tz=z+Math.sin(a*.785)*r;const t=cellAt(P.floor,Math.floor(tx),Math.floor(tz));if(t===0)return[tx,tz]}return[P.x,P.z]}
-function flowFor(t){const key=t;let e=CARD.flows.get(key);if(e&&now-e.t<.5)return e.f;if(!e){e={f:new Int16Array(W*D),t:0};CARD.flows.set(key,e)}e.t=now;
-  const f=e.f;f.fill(-1);const q=MP.q||(MP.q=new Int16Array(W*D));let h=0,n=0;const s=clamp(Math.floor(t.x),0,W-1)+clamp(Math.floor(t.z),0,D-1)*W;f[s]=0;q[n++]=s;const G=grid[P.floor];
-  while(h<n){const c=q[h++];const cx=c%W,cz=(c/W)|0;for(const[dx,dz]of N4){const nx=cx+dx,nz=cz+dz;if(nx<0||nz<0||nx>=W||nz>=D)continue;const k=nx+nz*W;if(f[k]>=0)continue;const ty=G[k];if(ty&&!(ty===T.DOOR&&doorOpen[P.floor]>.85))continue;f[k]=f[c]+1;q[n++]=k}}
-  return f}
-function nearestFoe(u){let best=null,bd=45;for(const e of unitFoes(u.team)){const d=Math.hypot(e.x-u.x,e.z-u.z);if(d<bd){bd=d;best=e}}return best}
-function updateUnits(dt){const S=surf(P.floor);
-  for(const u of CARD.units){const m=u.mesh,p=u.parts;
-    if(u.dead){u.deadT+=dt;m.rotation.x=Math.max(-Math.PI/2,-u.deadT*5);m.position.y=S-Math.max(0,u.deadT-.6)*.8;if(u.deadT>1.4)u.remove=true;continue}
-    u.life-=dt;if(u.life<=0||u.hp<=0){unitDie(u);continue}
-    if(!MPM)for(const e of enemies){if(e.dead||e.type==='boss'||e.state!=='chase'||e.f!==P.floor)continue;if(Math.hypot(e.x-u.x,e.z-u.z)<.9)u.hp-=25*dt}
-    if(u.stunUntil>now)continue;
-    u.retarget-=dt;if(u.retarget<=0||!u.target||u.target.dead){u.retarget=.5;u.target=nearestFoe(u)}
-    const t=u.target;let mvx=0,mvz=0,tx,tz;
-    if(t){const dx=t.x-u.x,dz=t.z-u.z,d=Math.hypot(dx,dz)||1,reach=u.reach+(t.type==='boss'?1.8:0);u.yaw+=angTo(u.yaw,Math.atan2(dx,dz))*Math.min(1,dt*10);
-      if(d>reach){tx=t.x;tz=t.z;const fl=flowFor(t),cx=Math.floor(u.x),cz=Math.floor(u.z),cd=fl[clamp(cx,0,W-1)+clamp(cz,0,D-1)*W];
-        if(cd>1){let bv=cd,bx=-1,bz=-1;for(const[ddx,ddz]of N8){const nx=cx+ddx,nz=cz+ddz;if(nx<0||nz<0||nx>=W||nz>=D)continue;const v=fl[nx+nz*W];if(v<0)continue;if(ddx&&ddz&&(fl[cx+ddx+cz*W]<0||fl[cx+(cz+ddz)*W]<0))continue;if(v<bv){bv=v;bx=nx;bz=nz}}if(bx>=0){tx=bx+.5;tz=bz+.5}}
-        const ex=tx-u.x,ez=tz-u.z,el=Math.hypot(ex,ez)||1;mvx=ex/el*u.speed;mvz=ez/el*u.speed}
-      else{u.atkCD-=dt;if(u.atkCD<=0){u.atkCD=u.rate;u.swing=.3;unitHit(t,u.dmg*(u.kind==='lumber'&&u.rageUntil>now?1.35:1),u.name);if(u.kind==='lumber')sNoise(.1,2500,.15*clamp(1-Math.hypot(P.x-u.x,P.z-u.z)/25,0,1),'bandpass')}}}
-    else{const dx=P.x-u.x,dz=P.z-u.z,d=Math.hypot(dx,dz);if(d>3){mvx=dx/d*u.speed*.8;mvz=dz/d*u.speed*.8;u.yaw+=angTo(u.yaw,Math.atan2(dx,dz))*Math.min(1,dt*8)}}
-    if(u.kind==='skel')for(const o of CARD.units){if(o===u||o.dead||o.kind!=='skel')continue;const ox=u.x-o.x,oz=u.z-o.z,d2=ox*ox+oz*oz;if(d2<.16&&d2>1e-5){const dd=Math.sqrt(d2);mvx+=ox/dd*1.6;mvz+=oz/dd*1.6}}
-    const ox=u.x,oz=u.z;slideMove(u,mvx*dt,mvz*dt,u.r,P.floor,S,true);const mv=Math.hypot(u.x-ox,u.z-oz);u.phase+=mv*(u.kind==='skel'?5:3);
-    const sw=Math.sin(u.phase)*.7*Math.min(1,mv/dt/2);p.legL.rotation.x=sw;p.legR.rotation.x=-sw;u.swing=Math.max(0,u.swing-dt);
-    p.armR.rotation.x=(u.kind==='skel'?-1.2:-.6)-(u.swing>0?Math.sin(u.swing/.3*Math.PI)*1.4:0);
-    m.position.set(u.x,S,u.z);m.rotation.y=u.yaw}
-  for(let i=CARD.units.length-1;i>=0;i--)if(CARD.units[i].remove){scene.remove(CARD.units[i].mesh);CARD.units.splice(i,1)}
-  if(NET.on){CARD.sendT-=dt;if(CARD.sendT<=0&&CARD.units.length){CARD.sendT=.12;NET.send({t:'fx',k:'units',u:CARD.units.map(u=>[u.id,u.kind==='skel'?0:1,+u.x.toFixed(2),+u.z.toFixed(2),+u.yaw.toFixed(2),u.dead?1:0])})}}
-}
-function unitDie(u){u.dead=true;u.deadT=0;emit(u.x,surf(P.floor)+.6,u.z,u.kind==='skel'?0xe8e4d8:0x8a0a0a,8,2,.07,.5);if(u.kind==='lumber')spawnRage(u.x,u.z,u.team,true)}
-// ---- rage puddle (Lumberjack drop)
-function spawnRage(x,z,team,local){const S=surf(P.floor);const m=new THREE.Mesh(new THREE.CircleGeometry(2.2,24),new THREE.MeshBasicMaterial({color:0xb040ff,transparent:true,opacity:.55,depthWrite:false}));
-  m.rotation.x=-Math.PI/2;m.position.set(x,S+.03,z);scene.add(m);CARD.rage.push({x,z,team,life:10,mesh:m,local:!!local});SFX.zap();emit(x,S+.5,z,0xc060ff,24,3,.1,.8,3);
-  if(local&&NET.on)NET.send({t:'fx',k:'rage',x,z,team})}
-function updateRage(dt){const S=surf(P.floor);
-  for(let i=CARD.rage.length-1;i>=0;i--){const r=CARD.rage[i];r.life-=dt;r.mesh.material.opacity=Math.min(.55,r.life/2*.55)+Math.sin(now*6)*.05;
-    if(Math.random()<dt*14)emit(r.x+rnd(-1.8,1.8),S+.1,r.z+rnd(-1.8,1.8),0xc060ff,1,.6,.08,.7,-1.5);
-    const forMe=r.local||(MPM&&MP.tdm&&r.team===P.team);
-    if(!P.mpDead&&forMe&&Math.hypot(P.x-r.x,P.z-r.z)<2.2){if(!(P.rageUntil>now))toast('RAGE! +35% damage');P.rageUntil=now+5}
-    for(const b of MP.bots)if(!b.dead&&b.team===r.team&&Math.hypot(b.x-r.x,b.z-r.z)<2.2)b.rageUntil=now+5;
-    for(const u of CARD.units)if(!u.dead&&u.team===r.team&&Math.hypot(u.x-r.x,u.z-r.z)<2.2)u.rageUntil=now+5;
-    if(r.life<=0){scene.remove(r.mesh);CARD.rage.splice(i,1)}}
-  $('rageFx').style.opacity=P.rageUntil>now?.55+Math.sin(now*5)*.1:0}
-function rageMul(){return P.rageUntil>now?1.35:1}
-// ---- Hog Rider
-const hogView=new THREE.Group();{const pink=lam(0xd08a78),dark=lam(0x8a5a4a);const B=(m,w,h,d,x,y,z)=>{const me=new THREE.Mesh(geoRBox,m);me.scale.set(w,h,d);me.position.set(x,y,z);hogView.add(me);return me};
-  B(lam(0xe0a090),.6,.42,.5,0,0,-.2);B(lam(0xb86a5a),.32,.22,.1,0,-.04,-.47);B(boneDark,.06,.06,.02,-.06,-.04,-.52);B(boneDark,.06,.06,.02,.06,-.04,-.52);
-  B(dark,.14,.18,.06,-.22,.27,-.05);B(dark,.14,.18,.06,.22,.27,-.05);B(lam(0xf0ece0),.05,.14,.05,-.17,-.2,-.42);B(lam(0xf0ece0),.05,.14,.05,.17,-.2,-.42);B(pink,.9,.3,.6,0,-.15,.25)}
-hogView.position.set(0,-.78,-.9);hogView.visible=false;gunScene.add(hogView);
-const CARD_FN={
-  skel(){const team=unitTeam();camera.getWorldDirection(_v);const cx=P.x+_v.x*2.5,cz=P.z+_v.z*2.5;let n=0;
-    for(let i=0;i<20;i++){const a=i/20*Math.PI*2,r=.6+(i%3)*.45;const[x,z]=freeCellNear(cx+Math.cos(a)*r,cz+Math.sin(a)*r);spawnUnit('skel',x,z,team);n++}
-    emit(cx,surf(P.floor)+.3,cz,0x9a8ad8,30,3,.1,.7);return n>0},
-  lumber(){camera.getWorldDirection(_v);const[x,z]=freeCellNear(P.x+_v.x*2,P.z+_v.z*2);spawnUnit('lumber',x,z,unitTeam());emit(x,surf(P.floor)+.5,z,0xc83a3a,20,3,.1,.7);return true},
-  hog(){if(P.hogUntil>now)return false;P.savedGuns=P.guns;P.savedCur=P.cur;P.guns=[{id:'hogpistol',pap:0,mag:6,res:72}];P.cur=0;P.reloadT=0;P.swapT=.3;P.burstLeft=0;P.hogUntil=now+25;hogView.visible=true;SFX.oink();return true},
-  zap(){openTablet();return false}};
-function dismountHog(silent){if(!P.hogUntil)return;P.hogUntil=0;hogView.visible=false;if(P.savedGuns){P.guns=P.savedGuns;P.cur=Math.min(P.savedCur||0,P.guns.length-1);P.savedGuns=null}P.reloadT=0;P.swapT=.3;if(!silent)toast('Dismounted')}
-// ---- Zap laptop
-function openTablet(){if(CARD.elixir<2)return;CARD.tablet=true;P.menuOpen=true;P.trigger=false;$('tablet').classList.remove('hidden');try{document.exitPointerLock()}catch(e){}drawTablet()}
-function closeTablet(){CARD.tablet=false;P.menuOpen=false;$('tablet').classList.add('hidden');lockPointer()}
-let tabMouse=null;
-function drawTablet(){if(!CARD.tablet)return;const c=$('tabCanvas'),g=c.getContext('2d');const s=Math.min(560/W,360/D);c.width=W*s;c.height=D*s;
-  g.imageSmoothingEnabled=false;g.drawImage(mmBase[P.floor],0,0,c.width,c.height);
-  for(const e of unitFoes(unitTeam())){g.fillStyle=e.type==='boss'?'#d040ff':'#ff3a3a';g.fillRect(e.x*s-3,e.z*s-3,6,6)}
-  for(const u of CARD.units)if(!u.dead){g.fillStyle='#e8e4d8';g.fillRect(u.x*s-1.5,u.z*s-1.5,3,3)}
-  g.fillStyle='#4f4';g.fillRect(P.x*s-4,P.z*s-4,8,8);
-  if(tabMouse){g.strokeStyle='#7fd0ff';g.lineWidth=2;g.beginPath();g.arc(tabMouse[0],tabMouse[1],3*s,0,Math.PI*2);g.stroke();g.fillStyle='rgba(120,200,255,.15)';g.fill()}
-  requestAnimationFrame(drawTablet)}
-function zapAt(x,z){const S=surf(P.floor);CARD.elixir-=2;SFX.card();zapVisual(x,z);if(NET.on)NET.send({t:'fx',k:'zap',x,z});
-  for(const e of unitFoes(unitTeam())){if(Math.hypot(e.x-x,e.z-z)>3+(e.type==='boss'?1.5:0))continue;
-    if(e.type==='net'){netHit(e,30,false,'streak','Zap');NET.send({t:'hit',to:e.id,dmg:0,head:false,w:'Zap',stun:.2})}
-    else if(e.type==='bot'){e.stunUntil=now+.2;damageBot(e,30,false,'streak',null,'Zap')}
-    else{e.stunUntil=now+.2;damageEnemy(e,e.type==='boss'?1500:300+R.n*30,false,'unit')}}}
-function zapVisual(x,z){const S=surf(P.floor);SFX.zap();sNoise(.4,5000,.4,'highpass');for(let i=0;i<4;i++){const a=new THREE.Vector3(x+rnd(-1,1),S+14,z+rnd(-1,1)),b=new THREE.Vector3(x+rnd(-1.5,1.5),S+.1,z+rnd(-1.5,1.5));addLine(a,b,0xbfe8ff,.25,.6)}
-  emit(x,S+.5,z,0x9fd8ff,40,5,.09,.5,2);fxLight.position.set(x,S+3,z);fxLight.color.set(0x9fd8ff);fxLight.intensity=6;const d=Math.hypot(P.x-x,P.z-z);if(d<10)shake=Math.min(1,shake+.3)}
-// ---- online ghosts for other players' units
-function ghostUnits(from,list){const seen=new Set();for(const[id,k,x,z,yaw,dead]of list){const key=from+'_'+id;seen.add(key);let gh=CARD.ghosts.get(key);
-    if(!gh){const m=k===0?makeSkeleton():makeLumberjack();scene.add(m.g);gh={m,x,z,yaw,t:now,phase:0};CARD.ghosts.set(key,gh)}
-    gh.tx=x;gh.tz=z;gh.tyaw=yaw;gh.t=now;gh.dead=dead}}
-function updateGhosts(dt){const S=surf(P.floor),k=1-Math.exp(-dt*12);for(const[key,gh]of CARD.ghosts){if(now-gh.t>1){scene.remove(gh.m.g);CARD.ghosts.delete(key);continue}
-    const ox=gh.x,oz=gh.z;gh.x+=(gh.tx-gh.x)*k;gh.z+=(gh.tz-gh.z)*k;gh.yaw+=angTo(gh.yaw,gh.tyaw)*k;const mv=Math.hypot(gh.x-ox,gh.z-oz);gh.phase+=mv*5;const sw=Math.sin(gh.phase)*.7;
-    gh.m.legL.rotation.x=sw;gh.m.legR.rotation.x=-sw;gh.m.g.position.set(gh.x,S,gh.z);gh.m.g.rotation.set(gh.dead?-1.4:0,gh.yaw,0)}}
-function updateCards(dt){CARD.elixir=Math.min(10,CARD.elixir+dt/2.8);if(P.hogUntil&&now>P.hogUntil){dismountHog();toast('Your hog ran off')}
-  updateUnits(dt);updateRage(dt);updateGhosts(dt);hogView.position.y=-.78+Math.sin(P.bob*1.6)*.03*Math.min(1,Math.hypot(P.vx,P.vz)/4)}
-function initCards(){renderCardsHUD();placeCardsHUD();
-  $('tabCanvas').addEventListener('mousemove',e=>{const r=e.target.getBoundingClientRect();tabMouse=[e.clientX-r.left,e.clientY-r.top]});
-  $('tabCanvas').addEventListener('click',e=>{if(!CARD.tablet)return;const r=e.target.getBoundingClientRect(),s=e.target.width/W;const x=(e.clientX-r.left)/s,z=(e.clientY-r.top)/s;closeTablet();zapAt(x,z)});
-  $('tabCancel').onclick=()=>closeTablet()}
-
+// (the card deck and its elixir bar were removed)
 // ================= PROGRESSION: weapon stats, camos, BP, skins, Halloween event =================
 const LS=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
 const LSset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
@@ -5552,7 +5400,7 @@ const SKINS={
   default:{name:'Operator',price:0,skin:0xd6aa82,sleeve:0x2f4a5f,pants:0x3a4434,head:null},
   skeleton:{name:'Bone Daddy',price:400,skin:0xe8e4d8,sleeve:0x1a1a1a,pants:0x1a1a1a,head:'skull'},
   mummy:{name:'The Mummy',price:500,skin:0xd8ccb0,sleeve:0xd0c4a4,pants:0xc8bca0,head:'mummy'},
-  pumpkin:{name:'Pumpkin King',price:600,skin:0x2a1a0a,sleeve:0x3a2a1a,pants:0x2a1a0a,head:'pumpkin'},
+  pumpkin:{name:'Pumpkin Lord',price:600,skin:0x2a1a0a,sleeve:0x3a2a1a,pants:0x2a1a0a,head:'pumpkin'},
   witch:{name:'Witch Doctor',price:700,skin:0x7ac060,sleeve:0x4a2a6a,pants:0x2a1a3a,head:'witch'},
   vampire:{name:'Count Vlad',price:800,skin:0xe0d8e0,sleeve:0x1a0a12,pants:0x1a0a12,head:'vampire'},
   werewolf:{name:'Werewolf',price:1000,skin:0x5a4030,sleeve:0x4a3424,pants:0x3a3a4a,head:'wolf'}};
@@ -5786,7 +5634,7 @@ const TRACERS=[['red','Red',[0xff2a2a]],['orange','Orange',[0xff8a1a]],['yellow'
   ['redblue','Red & Blue',[0xff2a2a,0x2a7aff]],['orangepurple','Orange & Purple',[0xff8a1a,0xa040ff]],['yellowgreen','Yellow & Green',[0xffe02a,0x3aff4a]],['cyanmagenta','Cyan & Magenta',[0x2af0ff,0xff2ad8]],
   ['whitered','White & Red',[0xffffff,0xff2a2a]],['pinkteal','Pink & Teal',[0xff7ab8,0x2ad8c0]],['patriot','Red, White & Blue',[0xff2a2a,0xffffff,0x2a7aff]],['rainbow','Rainbow',[0xff2a2a,0xff8a1a,0xffe02a,0x3aff4a,0x2a7aff,0x5a3aff,0xc040ff]]]
   .map(([id,name,c],i)=>({id,name,c,price:50+i*100}));
-TRACERS.push({id:'gold',name:'Gold Rush',c:[0xffc830,0xfff0a0],code:true},{id:'papglow',name:'Pack-a-Punch',c:[0xd080ff,0x40e0ff],ach:true},{id:'veteran',name:'Veteran',c:[0xffffff,0xffc830],ach:true});
+TRACERS.push({id:'gold',name:'Gold Rush',c:[0xffc830,0xfff0a0],code:true},{id:'papglow',name:'Arc Forge',c:[0xd080ff,0x40e0ff],ach:true},{id:'veteran',name:'Veteran',c:[0xffffff,0xffc830],ach:true});
 const TR=Object.fromEntries(TRACERS.map(t=>[t.id,t]));
 const hexCss=c=>'#'+c.toString(16).padStart(6,'0');
 // ---- keychains
@@ -5830,7 +5678,7 @@ function attachKeychain(gun,id){if(!id||!KEYCHAINS[id])return;const rec=gun.chil
 const EMOTES={
   wave:{name:'Wave',price:0,dur:2.4},salute:{name:'Salute',price:0,dur:2.4},clap:{name:'Slow Clap',price:150,dur:3},facepalm:{name:'Facepalm',price:150,dur:2.6},
   disco:{name:'Disco Fever',price:300,dur:4},robot:{name:'The Robot',price:300,dur:4},floss:{name:'Floss',price:400,dur:4},dab:{name:'Dab',price:200,dur:2},
-  pushups:{name:'Push-ups',price:350,dur:4},sit:{name:'Take a Seat',price:250,dur:4},zombie:{name:'Thriller',event:true,dur:4},fistpump:{name:'Fist Pump',ach:true,dur:2.6},
+  pushups:{name:'Push-ups',price:350,dur:4},sit:{name:'Take a Seat',price:250,dur:4},zombie:{name:'Graveyard Shuffle',event:true,dur:4},fistpump:{name:'Fist Pump',ach:true,dur:2.6},
   spin:{name:'Breakdance Spin',ach:true,dur:3.4},laugh:{name:'Laugh',ach:true,dur:2.6},moonwalk:{name:'Moonwalk',code:true,dur:4}};
 // poses: arms hang along -y from the shoulder; rotation.z lifts them sideways (+ for the right arm), rotation.x swings them forward (-)
 function emotePose(p,id,t){const s=Math.sin,L=p.armL,R=p.armR,eL=L.userData.elbow,eR=R.userData.elbow,lgL=p.legL,lgR=p.legR,g=p.g;
@@ -5893,7 +5741,7 @@ const BANNERS={
   hunter:{name:'Headhunter',bg:['#600000','#100000'],pat:'dots',fg:'#ff8080',em:'crosshair',price:0,ach:'hs50'},
   veteran:{name:'Veteran',bg:['#3a4a2a','#101808'],pat:'chevron',fg:'#e0d090',em:'wings',price:0,ach:'mp100'},
   survivor:{name:'Survivor',bg:['#504030','#100800'],pat:'splat',fg:'#ff4040',em:'hand',price:0,ach:'round25'},
-  netrunner:{name:'Netrunner',bg:['#003040','#000810'],pat:'grid',fg:'#40ffd0',em:'bolt',price:0,ach:'online'}};
+  netrunner:{name:'Grid Runner',bg:['#003040','#000810'],pat:'grid',fg:'#40ffd0',em:'bolt',price:0,ach:'online'}};
 let shopBanner='bloodmoon';
 const OWN={emotes:LS('hotd_emotes',['wave','salute']),tracers:LS('hotd_tracers',[]),kc:LS('hotd_keychains',[]),codes:LS('hotd_codes',[]),achrew:LS('hotd_achrew',[]),banners:LS('hotd_banners',[])};
 const EMOTE_EQ=LS('hotd_emoteeq',['wave','salute',null,null]),TRACER_EQ=LS('hotd_tracereq',{}),KC_EQ=LS('hotd_kceq',{});
@@ -5914,7 +5762,7 @@ const ACH_REW={first:{bp:50},z100:{kc:'minizombie'},z1000:{camo:'damascus'},hs50
 function achRewards(){for(const a of ACH)if(achDone[a.id]&&!OWN.achrew.includes(a.id)){OWN.achrew.push(a.id);saveOwn();grant(ACH_REW[a.id],a.name)}}
 // ---- event: keychain and emote rewards
 EV_CH.push({id:'kcbat',name:'Batty',desc:'Kill 250 zombies',cur:()=>EV.zk,goal:250,reward:{kc:'bat'}},{id:'kcghost',name:'Boo!',desc:'Get 25 multiplayer kills',cur:()=>EV.mk,goal:25,reward:{kc:'ghost'}},
-  {id:'kcpump',name:'Jack-o-Charm',desc:'Win 1 game',cur:()=>EV.wins,goal:1,reward:{kc:'pumpkin'}},{id:'thriller',name:'Thriller',desc:'Play on 6 different maps',cur:()=>EV.maps.length,goal:6,reward:{emote:'zombie'}});
+  {id:'kcpump',name:'Jack-o-Charm',desc:'Win 1 game',cur:()=>EV.wins,goal:1,reward:{kc:'pumpkin'}},{id:'thriller',name:'Graveyard Shuffle',desc:'Play on 6 different maps',cur:()=>EV.maps.length,goal:6,reward:{emote:'zombie'}});
 // ---- codes (each works once per player)
 const CODE_REW={oxrjto:{skin:'pundit',kc:'mic'},hzpua:{bp:500},'7ow4v0':{camo:'radiation',kc:'radiation'},'1njw7c1':{emote:'moonwalk'},'10620bl':{tracer:'gold'},'19a9fsd':{kc:'minizombie',bp:250}};
 function codeHash(s){let x=2166136261;for(const c of String(s).toUpperCase().replace(/\s+/g,''))x=Math.imul(x^c.charCodeAt(0),16777619)>>>0;return x.toString(36)}
@@ -6206,7 +6054,7 @@ const ATT_LV={optic:{reddot:2,scope8:4,holo:6,variable:10,hybrid:12,acog:15,ther
 const prNeed=L=>600+L*120,wpNeed=L=>400+L*80;   // XP from level L to L+1
 const sumNeed=(need,L)=>{let t=0;for(let i=1;i<L;i++)t+=need(i);return t};
 function lvOf(xp,need,max){let L=1;while(L<max&&xp>=need(L)){xp-=need(L);L++}return{lv:L,into:Math.floor(xp),next:L<max?need(L):0}}
-const PR=Object.assign({xp:0,gf:[],gfa:{}},LS('hotd_prog',{}));
+const PR=Object.assign({xp:0,gf:[],gfa:{},pres:0,keys:0},LS('hotd_prog',{}));
 function prSave(){LSset('hotd_prog',PR)}
 // first run: keep everything the player already has. Guns they used or put in a class stay unlocked, their class attachments too,
 // and past kills turn into weapon XP and player XP (player XP seeded up to level 30 at most).
@@ -6215,6 +6063,19 @@ if(!PR.v){PR.v=1;let mk=0,zk=0,had=false;try{had=!!localStorage.getItem('hotd_cl
   if(had)for(const c of CLASSES)for(const[id,att]of[[c.primary,c.att],[c.secondary,c.att2]]){if(!PR.gf.includes(id))PR.gf.push(id);const g=PR.gfa[id]||(PR.gfa[id]=[]);for(const s in att||{})if(att[s]&&att[s]!=='none'&&!g.includes(s+':'+att[s]))g.push(s+':'+att[s])}
   PR.xp=Math.min(sumNeed(prNeed,30),mk*100+zk*10);LSset('hotd_wstats',WSTAT);prSave()}
 function prLv(){return lvOf(PR.xp,prNeed,PR_MAX)}
+// ---- prestige: at the max level, start again from level 1 for an emblem, 1000 BP and a Prestige Key (unlocks any gun for good).
+// Guns lock again by level, except ones you already had (PR.gf) and ones you open with keys; weapon levels and attachments stay.
+const PRES_MAX=10,PRES_COL=['','#c08a4a','#c8c8d0','#e8c040','#5ad0ff','#9a6aff','#ff5a7a','#50e080','#ff9a30','#e0e0ff','#ff3030'];
+function presName(n){n=n|0;return n>=PRES_MAX?'PRESTIGE MASTER':n?'PRESTIGE '+n:''}
+function presEmblem(n,sz){n=n|0;if(!n)return'';return`<span class="presEm" title="${presName(n)}" style="--pc:${PRES_COL[Math.min(PRES_MAX,n)]};font-size:${sz||14}px">&#9733;<i>${n>=PRES_MAX?'M':n}</i></span>`}
+function prPrestige(){if(prLv().lv<PR_MAX||(PR.pres|0)>=PRES_MAX)return;
+  if(!confirm(`Enter ${presName((PR.pres|0)+1)}?\n\nYour level goes back to 1 and guns lock again by level (guns you have already used stay unlocked; weapon levels and attachments stay).\nYou get a new emblem, 1000 BP and a Prestige Key that unlocks any gun for good.`))return;
+  PR.pres=(PR.pres|0)+1;PR.keys=(PR.keys|0)+1;PR.xp=0;prSave();try{awardBP(1000)}catch(e){}prPopup(presName(PR.pres),'+1000 BP and a Prestige Key');try{SFX.powerup()}catch(e){}if(typeof renderMp==='function')renderMp()}
+function prKeyMenu(){if(!(PR.keys>0))return;const locked=Object.keys(GUN_LV).filter(id=>WEAPONS[id]&&!gunUnlocked(id)).sort((a,b)=>GUN_LV[a]-GUN_LV[b]);
+  let el=$('prKeys');if(!el){el=document.createElement('div');el.id='prKeys';el.className='overlay';el.style.zIndex=62;document.body.appendChild(el)}
+  el.classList.remove('hidden');el.innerHTML=`<div class="card" style="max-width:560px"><h1 style="font-size:20px">PRESTIGE KEY</h1><p>You have ${PR.keys} key${PR.keys>1?'s':''}. Pick a gun to unlock for good.</p><div class="prKeyList">${locked.length?locked.map(id=>`<button class="btn pill" data-k="${id}">${WEAPONS[id].name} <small>(level ${GUN_LV[id]})</small></button>`).join(''):'<p class="note">Every gun is already unlocked.</p>'}</div><p><button class="btn" id="prKeysX">CLOSE</button></p></div>`;
+  el.querySelector('#prKeysX').onclick=()=>el.classList.add('hidden');
+  for(const b of el.querySelectorAll('[data-k]'))b.onclick=()=>{const id=b.dataset.k;if(!(PR.keys>0))return;PR.gf.push(id);PR.keys--;prSave();toast(WEAPONS[id].name+' unlocked for good');el.classList.add('hidden');if(typeof renderMp==='function')renderMp()}}
 function gunLv(id){return GUN_LV[id]||0}
 function gunUnlocked(id){return prLv().lv>=gunLv(id)||PR.gf.includes(id)}
 function wxp(id){return(WSTAT[id]&&WSTAT[id].xp)||0}
@@ -6254,7 +6115,7 @@ function prClass(c){const p=gunUnlocked(c.primary)?c.primary:(WEAPONS[c.primary]
 function prLockTag(id){return gunUnlocked(id)?'':` <span class="prLock">&#128274; LEVEL ${gunLv(id)}</span>`}
 function prAttName(id,s,k){return ATT[s][k].name+(attUnlocked(id,s,k)?'':` <span class="prLock">(&#128274; weapon LV ${attLv(s,k)})</span>`)}
 function prNextGun(L){let best=null;for(const id in GUN_LV)if(GUN_LV[id]>L&&!PR.gf.includes(id)&&WEAPONS[id]&&(!best||GUN_LV[id]<GUN_LV[best]))best=id;return best}
-function prBadgeHTML(){const L=prLv(),ng=prNextGun(L.lv);return`<div class="prBadge"><b>LEVEL ${L.lv}</b>${L.next?` <small>${L.into} / ${L.next} XP</small>`:' <small>MAX LEVEL</small>'}<i><u style="width:${L.next?Math.round(L.into/L.next*100):100}%"></u></i>${ng?`<small>Next unlock: ${WEAPONS[ng].name} at level ${GUN_LV[ng]}</small>`:''}</div>`}
+function prBadgeHTML(){const L=prLv(),ng=prNextGun(L.lv);return`<div class="prBadge">${presEmblem(PR.pres)}<b>${PR.pres?presName(PR.pres)+' &middot; ':''}LEVEL ${L.lv}</b>${L.next?` <small>${L.into} / ${L.next} XP</small>`:' <small>MAX LEVEL</small>'}<i><u style="width:${L.next?Math.round(L.into/L.next*100):100}%"></u></i>${ng?`<small>Next unlock: ${WEAPONS[ng].name} at level ${GUN_LV[ng]}</small>`:''}${L.lv>=PR_MAX&&(PR.pres|0)<PRES_MAX?'<div><button class="btn red pill" type="button" onclick="prPrestige()">PRESTIGE</button> <small>Start again from level 1 for a new emblem</small></div>':''}${PR.keys>0?`<div><button class="btn pill" type="button" onclick="prKeyMenu()">USE PRESTIGE KEY (${PR.keys})</button></div>`:''}</div>`}
 function prWpnHTML(id){const W=wLv(id),sn=WEAPONS[id].kind==='sniper';let nx=null,nl=99;for(const sl in ATT_LV)for(const k in ATT_LV[sl]){const at=ATT[sl]&&ATT[sl][k],l=ATT_LV[sl][k];if(at&&l>W.lv&&l<nl&&(!at.sniper||sn)){nl=l;nx=at.name}}
   return`<div class="prWpn">WEAPON LEVEL ${W.lv}${W.next?` &middot; ${W.into} / ${W.next} XP`:' (MAX)'}<i><u style="width:${W.next?Math.round(W.into/W.next*100):100}%"></u></i>${nx?`<small>Next: ${nx} at weapon level ${nl}</small>`:''}</div>`}
 function prHudHTML(){const L=prLv();return`<div style="color:#9fe39f">LV ${L.lv}<i><b style="width:${L.next?Math.round(L.into/L.next*100):100}%"></b></i>${L.next?L.into+'/'+L.next:'MAX'}</div>`}
@@ -6268,7 +6129,9 @@ function prNext(){const q=PRQ.shift();if(!q){prBusy=false;return}prBusy=true;let
 #lvUp b{display:block;font-size:28px;letter-spacing:2px}#lvUp.sm b{font-size:15px;color:#9fe39f}#lvUp small{display:block;font-size:10px;color:#fff;margin-top:6px}
 #lvUp.go{animation:lvIn 3s ease-out forwards}#lvUp.sm.go{animation-duration:2s}
 @keyframes lvIn{0%{opacity:0;transform:translateX(-50%) scale(1.7)}10%{opacity:1;transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) scale(1)}}
-.prBadge{margin:4px 0 10px;font-size:10px}.prBadge b{color:var(--gold);font-size:13px}.prBadge small,.prWpn small{color:#bbb;font-size:8px}
+.prBadge{margin:4px 0 10px;font-size:10px}.prBadge b{color:var(--gold);font-size:13px}
+.prBadge .btn{margin-top:6px}.prKeyList{display:flex;flex-wrap:wrap;gap:6px;max-height:50vh;overflow:auto}
+.presEm{display:inline-block;position:relative;color:var(--pc);margin-right:6px;text-shadow:0 0 6px var(--pc);line-height:1;vertical-align:middle}.presEm i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:bold;font-size:.42em;color:#000;text-shadow:none;padding-top:.12em}.prBadge small,.prWpn small{color:#bbb;font-size:8px}
 .prBadge i,.prSum i,.prWpn i{display:block;height:6px;background:#222;border:2px solid #000;margin:3px 0}.prBadge u,.prSum u,.prWpn u{display:block;height:100%;background:var(--gold);text-decoration:none}
 .prWpn{margin-top:4px;font-size:9px;color:#9fe39f}.prWpn u{background:#9fe39f}.prSum{margin:10px 0;font-size:11px}.prSum b{color:#9fe39f}.prSum span{color:var(--gold)}
 .prLock{color:#ff8a7a}.wpCard.locked{opacity:.6}.wpCard.locked img{filter:grayscale(1) brightness(.6)}.gsOpt.locked{opacity:.5}.sbLv{color:var(--gold)}`;document.head.appendChild(st)}
@@ -6304,30 +6167,30 @@ if(MAP==='skyline'){camera.position.set(31.5,surf(0)+9,64);camera.lookAt(31.5,su
 // map picker on the title screen
 const MAP_INFO={
   hotel:{desc:'Six cramped floors of a haunted hotel. Ride the elevator and buy access floor by floor. The Broodmother waits on Floor 6.',
-    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Ride the elevator and buy access to each floor','Drink perks, roll the Mystery Box (Floor 3)','Pack-a-Punch your gun on Floor 5','Slay the giant spider on Floor 6']},
+    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Ride the elevator and buy access to each floor','Drink perks, roll the Mystery Crate (Floor 3)','Upgrade your gun at the Arc Forge on Floor 5','Slay the giant spider on Floor 6']},
   royale:{desc:"A 3D tournament arena: blue and red halves split by a river, two bridges, princess towers and a king tower at each end, all surrounded by a cheering crowd.",
-    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Open your King\'s Court, then a bridge to cross the river','Mystery Box is in the Blue King\'s Court','Pack-a-Punch is on the red side','The Broodmother waits in the Red King\'s Court']},
+    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Open your King\'s Court, then a bridge to cross the river','Mystery Crate is in the Blue Keep','The Arc Forge is on the red side','The Broodmother waits in the Red Keep']},
   skyline:{desc:'Seven skyscrapers high above a glowing city at dusk. Fight through offices, a penthouse, labs, a data center and apartments, all linked by glass sky bridges. Do not fall.',
-    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Open the sky bridges and tower doors to spread out','Mystery Box is in the penthouse (North Sky Bridge)','Pack-a-Punch is in Tower F','The Broodmother waits in Tower C. Watch the ledges!']},
+    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Open the sky bridges and tower doors to spread out','Mystery Crate is in the penthouse (North Sky Bridge)','The Arc Forge is in Tower F','The Broodmother waits in Tower C. Watch the ledges!']},
   frost:{desc:'A snowed-in military outpost in a blizzard. Fight across the courtyard, break into the barracks, mess hall, armory and comms compound, then open the hangar.',
-    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Break the barricades to open new buildings','Mystery Box is in the Armory','Pack-a-Punch is in the Comms bunker','The Broodmother is sealed in the Hangar']},
+    tips:['Earn points by shooting zombies','Buy guns off the chalk outlines on the walls','Break the barricades to open new buildings','Mystery Crate is in the Armory','The Arc Forge is in the Comms bunker','The Broodmother is sealed in the Hangar']},
   manor:{desc:'A moonlit estate with a sprawling graveyard. Break into the chapel, greenhouse, crypt and stables, then storm the manor house.',
-    tips:['Earn points by shooting zombies','Gravestones are low cover: shoot over them','Mystery Box is in the Crypt','Pack-a-Punch is in the Stables','The Broodmother lurks in the Manor House']},
+    tips:['Earn points by shooting zombies','Gravestones are low cover: shoot over them','Mystery Crate is in the Crypt','The Arc Forge is in the Stables','The Broodmother lurks in the Manor House']},
   refinery:{desc:'A sun-baked oil refinery in the desert. Fight between storage tanks and pipe racks, open the control room, pump house, warehouse and garage, then the cracking unit.',
-    tips:['Earn points by shooting zombies','Jersey barriers are low cover','Mystery Box is in the Warehouse','Pack-a-Punch is in the Garage','The Broodmother nests in the Cracking Unit']},
+    tips:['Earn points by shooting zombies','Jersey barriers are low cover','Mystery Crate is in the Warehouse','The Arc Forge is in the Garage','The Broodmother nests in the Cracking Unit']},
   temple:{desc:'Overgrown ruins deep in a rainy jungle. Cross the stream, open the jaguar and serpent shrines, the idol vault and the sunken baths, then the Great Pyramid.',
-    tips:['Earn points by shooting zombies','The stream is shallow: you can wade through it','Mystery Box is in the Idol Vault','Pack-a-Punch is in the Sunken Baths','The Broodmother sleeps inside the Great Pyramid']},
+    tips:['Earn points by shooting zombies','The stream is shallow: you can wade through it','Mystery Crate is in the Idol Vault','The Arc Forge is in the Sunken Baths','The Broodmother sleeps inside the Great Pyramid']},
   nuketown:{desc:'A replica of the famous cul-de-sac on a nuclear test site: a green house and a yellow house facing each other across the street, a school bus in the middle, garages, back yards and a fallout shelter.',
-    tips:['Earn points by shooting zombies','Both houses have an upstairs: take the stairs inside','Picket fences and windows can be jumped','Mystery Box is in the Green Garage','Pack-a-Punch is in the Yellow Garage','The Broodmother waits in the Fallout Shelter']},
+    tips:['Earn points by shooting zombies','Both houses have an upstairs: take the stairs inside','Picket fences and windows can be jumped','Mystery Crate is in the Green Garage','The Arc Forge is in the Yellow Garage','The Broodmother waits in the Fallout Shelter']},
   shipyard:{desc:'A container port at dusk. Fight between container stacks and cranes, wade around the piers, open the dock office, both warehouses and the customs house, then the dry dock.',
-    tips:['Earn points by shooting zombies','The dock office and customs house have an upstairs','The water by the quay is shallow enough to wade','Mystery Box is in Warehouse B','Pack-a-Punch is in the Customs House','The Broodmother is in the Dry Dock']},
+    tips:['Earn points by shooting zombies','The dock office and customs house have an upstairs','The water by the quay is shallow enough to wade','Mystery Crate is in Warehouse B','The Arc Forge is in the Customs House','The Broodmother is in the Dry Dock']},
   oldtown:{desc:'An old European village around a cobbled square with a fountain and market stalls. Walk into the cottages, open the tavern, bakery, blacksmith and mayor\'s house, then the old church.',
-    tips:['Earn points by shooting zombies','The tavern and mayor\'s house have an upstairs','The cottages are always open','Mystery Box is in the Blacksmith','Pack-a-Punch is in the Mayor\'s House','The Broodmother waits in the Old Church']},
+    tips:['Earn points by shooting zombies','The tavern and mayor\'s house have an upstairs','The cottages are always open','Mystery Crate is in the Blacksmith','The Arc Forge is in the Mayor\'s House','The Broodmother waits in the Old Church']},
   farm:{desc:'A family farm at harvest time: a farmhouse with bedrooms upstairs, a silo, a windmill, a duck pond and a tall cornfield to get lost in. The Broodmother has taken the big red barn.',
-    tips:['Earn points by shooting zombies','The cornfield hides you, and them','The farmhouse and tractor shed have an upstairs','Mystery Box is in the Grain Store','Pack-a-Punch is in the Tractor Shed','The Broodmother waits in the Big Red Barn']},
+    tips:['Earn points by shooting zombies','The cornfield hides you, and them','The farmhouse and tractor shed have an upstairs','Mystery Crate is in the Grain Store','The Arc Forge is in the Tractor Shed','The Broodmother waits in the Big Red Barn']},
   downtown:{desc:'A city block at dusk: the diner, the apartments, a hardware store, the police station and two corner shops you can walk into, with a gas station on the corner. The Broodmother is in the bank vault.',
-    tips:['Earn points by shooting zombies','Parked cars are cover; the shops are always open','The apartments have an upstairs','Mystery Box is in the Hardware Store','Pack-a-Punch is in the Police Station','The Broodmother waits in First City Bank']}};
-initSeason();spawnLobbyZombies();initMenus();initCards();initTouch();
+    tips:['Earn points by shooting zombies','Parked cars are cover; the shops are always open','The apartments have an upstairs','Mystery Crate is in the Hardware Store','The Arc Forge is in the Police Station','The Broodmother waits in First City Bank']}};
+initSeason();spawnLobbyZombies();initMenus();initTouch();
 $('pauseEditBtn').onclick=()=>{const host=$('pauseCacHost'),cac=$('menuCac');if(cac.parentNode===host){restoreCac();renderPauseClass();return}
   host.appendChild(cac);cac.classList.remove('hidden');const b=cac.querySelector('[data-go]');if(b)b.style.display='none';cacSel=MPC.cls;renderCAC();$('pauseEditBtn').textContent='DONE EDITING'};
 $('netJoinBtn').onclick=netJoinFromMenu;if($('hostBtn'))$('hostBtn').onclick=hostGame;
@@ -6337,7 +6200,7 @@ $('netLocalBtn').onclick=()=>{$('netAddr').value='localhost:8080';netJoinFromMen
 $('playBtn').onclick=()=>{if(MODE==='zm'&&MAP===zmMap)startGame();else goURL({map:zmMap,autostart:'zm'})};
 $('menuBtn').onclick=()=>goURL({map:MAP,mode:MODE,menu:MPM?'Mp':'Zm'});
 requestAnimationFrame(frame);
-window.G={renderLocker,lockCamo,shopPick,WSTAT,EV,awardBP,recordWin,weaponKill,shopBuy,shopEquip,claimEV,SKINS,CARD,CARD_FN,playCard,zapAt,fellOff,NET,unlock,achDone,netMsg,startOnline,MP,MPC,CLASSES,useStreak,startMP,damageBot,explode,scene,camera,ZONES,P,R,enemies,items,startGame,spawnZombie,spawnBoss,giveGun,unlocked,chooseFloor,interact,get state(){return state},set state(v){state=v},get boss(){return boss},arrive,update};
+window.G={renderLocker,lockCamo,shopPick,WSTAT,EV,awardBP,recordWin,weaponKill,shopBuy,shopEquip,claimEV,SKINS,fellOff,NET,unlock,achDone,netMsg,startOnline,MP,MPC,CLASSES,useStreak,startMP,damageBot,explode,scene,camera,ZONES,P,R,enemies,items,startGame,spawnZombie,spawnBoss,giveGun,unlocked,chooseFloor,interact,get state(){return state},set state(v){state=v},get boss(){return boss},arrive,update};
 </script>
 </body>
 </html>
