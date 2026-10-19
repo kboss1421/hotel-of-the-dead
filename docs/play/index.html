@@ -2335,7 +2335,7 @@ function frame(t){
     if(state!=='title'){updateViewModel(dt);updateHUD(dt)}
   }catch(err){console.error(err)}
   if(skyDome){skyDome.position.copy(camera.position);if(REALISM&&!skyDome.userData.real)realSky(skyDome)}
-  updateSpooky(dt);animCamos();
+  updateSpooky(dt);animCamos();if(FOL.on)foliageUpdate(dt);
   if(snow)updateSnow(dt);
   const cg=curGun(),cgd=cg&&def(cg);const showGun=state!=='title'&&!P.mpDead&&!EM.active&&!(cgd&&(scoped(cgd)||cgd.ret==='acog')&&P.adsK>.9);
   if(composer){gunPass.enabled=showGun;if(gradePass){gradePass.uniforms.time.value=now+performance.now()/1000;gradePass.uniforms.expo.value=renderer.toneMappingExposure}composer.render(dt)}
@@ -2454,17 +2454,17 @@ function makeAO(cmp){if(settings.ao===false||!THREE.DepthTexture||!THREE.ShaderP
   const st=document.createElement('style');st.textContent='.gpFocus{outline:3px solid #f2c14e!important;outline-offset:2px;box-shadow:0 0 12px rgba(242,193,78,.7)!important}';document.head.appendChild(st);
   const box=$('sVoice');if(box){const w=document.createElement('div');const B='class="btn" style="font-size:10px;padding:8px 12px"';
     w.innerHTML=`<div class="row">Target frame rate <button ${B} id="fpsBtn"></button></div><div class="row">Show FPS <button ${B} id="fpsShowBtn"></button></div>
-      <div class="row">Ambient occlusion <button ${B} id="aoBtn"></button></div><div class="row">Scanned textures &amp; real sky <button ${B} id="scanBtn"></button></div>
+      <div class="row">Ambient occlusion <button ${B} id="aoBtn"></button></div><div class="row">Scanned textures &amp; real sky <button ${B} id="scanBtn"></button></div><div class="row">3D grass &amp; ground detail <button ${B} id="folBtn"></button></div>
       <div class="row">Controller look speed <input type="range" id="sGp" min="0.3" max="3" step="0.05"></div>
       <div class="row">Fullscreen <button ${B} id="fsSetBtn"></button></div>
       <div class="row">Controller invert look <button ${B} id="gpInvBtn"></button></div><div class="row">Controller vibration <button ${B} id="gpRumBtn"></button></div>`;
     box.parentNode.insertBefore(w,box);
     const FT=['auto',120,144,60,0],ftName=v=>v==='auto'?'AUTO ('+PERF.hz+' HZ DISPLAY)':v?v+' FPS':'OFF (FIXED RESOLUTION)';
     const paint=()=>{const ft=settings.fpsTarget==null?'auto':settings.fpsTarget;$('fpsBtn').textContent=ftName(ft);$('fpsShowBtn').textContent=settings.showFps?'ON':'OFF';
-      $('aoBtn').textContent=settings.ao===false?'OFF':(REALISM?'ON':'ON (ULTRA / CINEMATIC ONLY)');$('scanBtn').textContent=settings.scan===false?'OFF':(REALISM?'ON':'ON (ULTRA / CINEMATIC ONLY)');$('gpInvBtn').textContent=settings.gpInvert?'ON':'OFF';$('gpRumBtn').textContent=settings.gpRumble===false?'OFF':'ON';$('sGp').value=settings.gpSens||1};
+      $('aoBtn').textContent=settings.ao===false?'OFF':(REALISM?'ON':'ON (ULTRA / CINEMATIC ONLY)');$('scanBtn').textContent=settings.scan===false?'OFF':(REALISM?'ON':'ON (ULTRA / CINEMATIC ONLY)');$('folBtn').textContent=settings.foliage===false?'OFF':(['high','ultra','cinematic'].includes(settings.quality)?'ON':'ON (HIGH AND ABOVE)');$('gpInvBtn').textContent=settings.gpInvert?'ON':'OFF';$('gpRumBtn').textContent=settings.gpRumble===false?'OFF':'ON';$('sGp').value=settings.gpSens||1};
     $('fpsBtn').onclick=()=>{const ft=settings.fpsTarget==null?'auto':settings.fpsTarget;settings.fpsTarget=FT[(FT.indexOf(ft)+1)%FT.length];saveSettings();paint()};
     $('fpsShowBtn').onclick=()=>{settings.showFps=!settings.showFps;saveSettings();paint()};
-    $('scanBtn').onclick=()=>{settings.scan=settings.scan===false;saveSettings();paint();toast('Scanned textures change after a restart / reload')};$('aoBtn').onclick=()=>{settings.ao=settings.ao===false;saveSettings();paint();toast('Ambient occlusion changes after a restart / reload')};
+    $('folBtn').onclick=()=>{settings.foliage=settings.foliage===false;saveSettings();paint();toast('Grass changes after a restart / reload')};$('scanBtn').onclick=()=>{settings.scan=settings.scan===false;saveSettings();paint();toast('Scanned textures change after a restart / reload')};$('aoBtn').onclick=()=>{settings.ao=settings.ao===false;saveSettings();paint();toast('Ambient occlusion changes after a restart / reload')};
     $('gpInvBtn').onclick=()=>{settings.gpInvert=!settings.gpInvert;saveSettings();paint()};$('gpRumBtn').onclick=()=>{settings.gpRumble=settings.gpRumble===false;saveSettings();paint()};
     $('sGp').oninput=()=>{settings.gpSens=+$('sGp').value;saveSettings()};paint();setInterval(()=>{if(!$('menuSet').classList.contains('hidden'))$('fpsBtn').textContent=ftName(settings.fpsTarget==null?'auto':settings.fpsTarget)},2000)}}
 // ---- fullscreen (browser, phones that allow it, desktop app): buttons in the Esc menu, pause menu and Settings
@@ -2708,7 +2708,7 @@ function addGrass(grp,g,S,isGrass,n){const geo=new THREE.ConeGeometry(.045,.32,3
   const o=new THREE.Object3D(),c=new THREE.Color();let k=0,tries=0;
   while(k<n&&tries<n*6){tries++;const x=rnd(1,W-1),z=rnd(1,D-1),cx=Math.floor(x),cz=Math.floor(z);if(g[cx+cz*W]||!isGrass(cx,cz))continue;
     o.position.set(x,S,z);o.rotation.set(rnd(-.3,.3),rnd(0,6),rnd(-.3,.3));o.scale.set(1,rnd(.6,1.5),1);o.updateMatrix();im.setMatrixAt(k,o.matrix);im.setColorAt(k,c.setHex(pick([0x4c9a34,0x5aa83c,0x3f8a2e,0x6ab448])));k++}
-  im.count=k;grp.add(im)}
+  im.count=k;im.visible=!folDensity();grp.add(im)}   // (hidden, but still built the same way, when the 3D grass replaces it)
 // merge static scenery that shares a material into one mesh (big draw-call saving)
 function mergeStatic(grp){if(/nomerge/.test(location.search))return 0;
   const exclude=new Set();for(const zn of ZONES)for(const m of zn.meshes)exclude.add(m);
@@ -3772,7 +3772,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.19.1714';
+const GAME_VERSION=/*VER*/'2026.10.19.1724';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -6152,10 +6152,90 @@ function initSeason(){applyMySkin();setText('bpAmt',String(BP));
   $('evDecor').onclick=()=>{settings.halloween=settings.halloween===false;saveSettings();location.reload()};
   decorateHalloween();achRewards()}
 
+// ================= FOLIAGE: 3D grass, wildflowers, dry tufts and pebbles on outdoor ground =================
+// Grows wherever the ground is green (grass) or sandy/earthy (tufts, pebbles), on open cells reachable from outside without passing
+// a door (so never through house floors). Instanced in 8x8-cell chunks: per-chunk frustum culling, drawn only near the camera, blades
+// shrink away at the edge of that range, sway in the wind and bend away from the player. Ultra/Cinematic full density, High lighter.
+const FOL={on:false,chunks:[],mats:[],t:0,R:40,u:{time:{value:0},pl:{value:new THREE.Vector3(0,-99,0)},far:{value:40}}};
+function folDensity(){if(settings.foliage===false||!OPEN||MOBILE)return 0;return{cinematic:1.25,ultra:1,high:.45}[settings.quality]||0}
+function folRand(seed){let s=seed>>>0||1;return()=>{s^=s<<13;s^=s>>>17;s^=s<<5;return(s>>>0)/4294967296}}
+// a clump of thin tapered blades, 2 segments each; uv.y = height along the blade (0 root, 1 tip); normals point mostly up so blades
+// light like the ground they grow from
+function folBladeGeo(n,r){const P=[],N=[],U=[],C=[],I=[];const rr=folRand(77);
+  for(let b=0;b<n;b++){const a=rr()*Math.PI*2,ox=(rr()-.5)*r,oz=(rr()-.5)*r,lean=(rr()-.5)*1.6,w=.009+rr()*.008,h=.55+rr()*.5,ca=Math.cos(a),sa=Math.sin(a),base=P.length/3;
+    for(let i=0;i<=2;i++){const t=i/2,y=t*h*(1-.12*Math.abs(lean)*t),bend=lean*t*t,wd=w*(i<2?1-t*.35:0);
+      for(const s of[-1,1]){P.push(ox+ca*wd*s+Math.cos(a+1.57)*bend*.3,y,oz+sa*wd*s+Math.sin(a+1.57)*bend*.3);N.push(-sa*.25,1,ca*.25);U.push(s<0?0:1,t);const k=.42+.58*t;C.push(k,k,k)}}
+    for(let i=0;i<2;i++){const q=base+i*2;I.push(q,q+1,q+2,q+1,q+3,q+2)}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));g.setIndex(I);return g}
+function folFlowerGeo(){const P=[],N=[],U=[],C=[],I=[];const h=1;
+  const add=(x,y,z,u,c)=>{P.push(x,y,z);N.push(0,1,0);U.push(.5,u);C.push(c,c,c);return P.length/3-1};
+  const a=add(-.006,0,0,0,.25),b=add(.006,0,0,0,.25),c=add(-.004,h,0,1,.35),d=add(.004,h,0,1,.35);I.push(a,b,c,b,d,c);   // stem
+  const ctr=add(0,h+.01,0,1,1.1);const pet=[];for(let i=0;i<6;i++){const t=i/6*Math.PI*2;pet.push(add(Math.cos(t)*.07,h-.01,Math.sin(t)*.07,1,1))}
+  for(let i=0;i<6;i++)I.push(ctr,pet[(i+1)%6],pet[i]);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));g.setIndex(I);return g}
+function folMat(sway,rough){const m=new THREE.MeshStandardMaterial({vertexColors:true,roughness:rough,metalness:0,side:THREE.DoubleSide});
+  m.onBeforeCompile=sh=>{sh.uniforms.fTime=FOL.u.time;sh.uniforms.fPl=FOL.u.pl;sh.uniforms.fFar=FOL.u.far;
+    sh.vertexShader='uniform float fTime;uniform vec3 fPl;uniform float fFar;\n'+sh.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+      vec3 fRoot=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).xyz;float fH=uv.y*uv.y;
+      float fD=distance(fRoot.xz,cameraPosition.xz);transformed*=1.-smoothstep(fFar-9.,fFar,fD);   // shrink away at the edge of the drawn range
+      float fW=sin(fTime*1.6+fRoot.x*.31+fRoot.z*.23)+.5*sin(fTime*2.9+fRoot.x*.9-fRoot.z*.7);
+      transformed.x+=fW*${sway.toFixed(3)}*fH;transformed.z+=cos(fTime*1.2+fRoot.z*.3)*${(sway*.6).toFixed(3)}*fH;
+      vec2 fAw=fRoot.xz-fPl.xz;float fPd=length(fAw);if(fPd<.9&&abs(fRoot.y-fPl.y)<1.5){vec2 fDir=fPd>.001?fAw/fPd:vec2(1.,0.);float fK=(1.-fPd/.9)*.5*fH;   // stepped-on grass leans away
+        transformed.x+=fDir.x*fK/max(.2,length(instanceMatrix[0].xyz));transformed.z+=fDir.y*fK/max(.2,length(instanceMatrix[2].xyz));transformed.y*=1.-.35*(1.-fPd/.9);}`);
+    sh.fragmentShader=sh.fragmentShader.replace('#include <normal_fragment_begin>','float faceDirection=1.0;vec3 normal=normalize(vNormal);vec3 geometryNormal=normal;');};
+  m.customProgramCacheKey=()=>'fol'+sway;FOL.mats.push(m);return m}
+function buildFoliage(){const dens=folDensity();if(!dens)return;
+  // ground colour per cell, read back from the vertex-coloured ground plane
+  let ground=null;scene.traverse(o=>{if(ground||!o.isMesh||!o.geometry||!o.geometry.attributes.color)return;const gb=o.geometry;if(!gb.boundingBox)gb.computeBoundingBox();const bb=gb.boundingBox;
+    if(bb.max.x-bb.min.x>=W*.9&&bb.max.z-bb.min.z>=D*.9&&bb.max.y-bb.min.y<.05)ground=o});
+  if(!ground)return;const S=surf(0),g=grid[0],pos=ground.geometry.attributes.position,col=ground.geometry.attributes.color,cc=new Float32Array(W*D*3),hsl={},tc=new THREE.Color();
+  for(let i=0;i<pos.count;i+=3){const x=Math.floor((pos.getX(i)+pos.getX(i+1)+pos.getX(i+2))/3),z=Math.floor((pos.getZ(i)+pos.getZ(i+1)+pos.getZ(i+2))/3);if(x<0||z<0||x>=W||z>=D)continue;const k=(x+z*W)*3;cc[k]=col.getX(i);cc[k+1]=col.getY(i);cc[k+2]=col.getZ(i)}
+  // open cells reachable from the map edge without going through a door: keeps grass out of buildings
+  const open=new Uint8Array(W*D),q=new Int32Array(W*D);let qh=0,qt=0;const free=n=>!g[n];
+  for(let x=0;x<W;x++)for(let z=0;z<D;z++){if(x>2&&z>2&&x<W-3&&z<D-3)continue;const n=x+z*W;if(free(n)&&!open[n]){open[n]=1;q[qt++]=n}}
+  while(qh<qt){const n=q[qh++],x=n%W,z=(n/W)|0;for(const[dx,dz]of N4){const nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=W||nz>=D)continue;const m=nx+nz*W;if(!open[m]&&free(m)){open[m]=1;q[qt++]=m}}}
+  const kind=new Uint8Array(W*D);   // 1 grass, 2 sand / dirt
+  for(let n=0;n<W*D;n++){if(!open[n])continue;tc.setRGB(cc[n*3],cc[n*3+1],cc[n*3+2]);tc.getHSL(hsl);const H=hsl.h*360;
+    if(H>=65&&H<170&&hsl.s>.12&&hsl.l>.1&&hsl.l<.7)kind[n]=1;else if(H>=15&&H<60&&hsl.s>.14&&hsl.l>.18&&hsl.l<.8)kind[n]=2}
+  const blade=folBladeGeo(12,.34),tuft=folBladeGeo(9,.24),flower=folFlowerGeo(),pebble=new THREE.DodecahedronGeometry(1,0);
+  for(const gm of[blade,tuft,flower,pebble])gm.boundingSphere=new THREE.Sphere(new THREE.Vector3(0,.3,0),6.4);   // one 8x8 chunk around its centre
+  const mGrass=folMat(.06,.92),mTuft=folMat(.05,.95),mFlower=folMat(.05,.7),mPeb=new THREE.MeshStandardMaterial({vertexColors:false,roughness:.85,metalness:0});
+  const rr=folRand(seededHash('fol-'+MAP)),o=new THREE.Object3D(),c=new THREE.Color(),grp=new THREE.Group();grp.name='foliage';scene.add(grp);
+  const CH=8;
+  for(let cz=0;cz<D;cz+=CH)for(let cx=0;cx<W;cx+=CH){const L={g:[],t:[],f:[],p:[]},ox=cx+CH/2,oz=cz+CH/2;
+    for(let z=cz;z<Math.min(D,cz+CH);z++)for(let x=cx;x<Math.min(W,cx+CH);x++){const n=x+z*W,k=kind[n];if(!k)continue;
+      // stay a little away from walls and fences so blades do not poke through them
+      let near=0;for(const[dx,dz]of N8){const m=(x+dx)+(z+dz)*W;if(x+dx<0||z+dz<0||x+dx>=W||z+dz>=D||g[m])near++}
+      const base=[cc[n*3],cc[n*3+1],cc[n*3+2]];
+      if(k===1){const cnt=Math.round((near?4:8)*dens+rr()*.6);
+        for(let i=0;i<cnt;i++){const px=x+.08+rr()*.84,pz=z+.08+rr()*.84,patch=.5+.5*Math.sin(px*.37)*Math.cos(pz*.29);L.g.push([px,pz,.13+.2*patch+rr()*.1,rr()*6.3,base,rr()])}
+        if(rr()<.12*dens)L.f.push([x+rr(),z+rr(),.18+rr()*.14,rr()*6.3,null,rr()]);
+        if(rr()<.25*dens)L.p.push([x+rr(),z+rr(),.025+rr()*.04,rr()*6.3,base,rr()])}
+      else{if(rr()<.5*dens&&!near)L.t.push([x+.1+rr()*.8,z+.1+rr()*.8,.18+rr()*.26,rr()*6.3,base,rr()]);
+        const pc=Math.round(1.2*dens+rr());for(let i=0;i<pc;i++)L.p.push([x+rr(),z+rr(),.02+rr()*.06,rr()*6.3,base,rr()])}}
+    const mk=(list,geo,mat,colour,flat)=>{if(!list.length)return null;for(let i=list.length-1;i>0;i--){const j=Math.floor(rr()*(i+1));[list[i],list[j]]=[list[j],list[i]]}const im=new THREE.InstancedMesh(geo,mat,list.length);im.position.set(ox,S,oz);
+      list.forEach(([px,pz,h,ry,b,v],i)=>{o.position.set(px-ox,flat?h*.2:0,pz-oz);o.rotation.set(flat?v*3:0,ry,flat?v*2:0);o.scale.set(flat?h*1.3:1+v*.4,flat?h*.6:h,flat?h:1+v*.4);o.updateMatrix();im.setMatrixAt(i,o.matrix);
+        colour(c,b,v);im.setColorAt(i,c)});im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;
+      im.receiveShadow=!flat;im.castShadow=false;im.matrixAutoUpdate=false;im.updateMatrix();im.userData.full=list.length;im.userData.lod=!flat;grp.add(im);return im};
+    const items=[
+      mk(L.g,blade,mGrass,(c,b,v)=>{c.setRGB(b[0],b[1],b[2]).lerp(c.clone().setHSL(.22+v*.07,.62,.26+v*.08),.6).multiplyScalar(.82+v*.28)},false),   // grass takes its colour from the lawn under it
+      mk(L.t,tuft,mTuft,(c,b,v)=>{c.setHSL(.09+v*.05,.32+v*.1,.3+v*.1)},false),
+      mk(L.f,flower,mFlower,(c,b,v)=>{c.setHex([0xf2f0e8,0xf2d040,0xb890e8,0xe86a6a,0xf2f0e8][Math.floor(v*5)])},false),
+      mk(L.p,pebble,mPeb,(c,b,v)=>{c.setRGB(b[0],b[1],b[2]).lerp(c.clone().setHex(0x8a8478),.6).multiplyScalar(.75+v*.5)},true)].filter(Boolean);
+    if(items.length)FOL.chunks.push({x:ox,z:oz,items})}
+  FOL.R=40;FOL.u.far.value=FOL.R;FOL.on=FOL.chunks.length>0}
+function seededHash(s){let h=2166136261;for(const ch of s)h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0}
+let folT=0;
+function foliageUpdate(dt){FOL.u.time.value+=dt;if(P)FOL.u.pl.value.set(P.x,P.y,P.z);folT-=dt;if(folT>0)return;folT=.2;
+  const cx=camera.position.x,cz=camera.position.z,R=FOL.R+6;for(const ch of FOL.chunks){const dd=Math.hypot(ch.x-cx,ch.z-cz),v=dd<R,f=dd<16?1:dd<28?.4:.15;
+    for(const m of ch.items){m.visible=v;if(v)m.count=m.userData.lod?Math.max(1,Math.round(m.userData.full*f)):m.userData.full}}}
 // ================= boot =================
 {const _mr=Math.random;if(OPEN)Math.random=seededRand('map-'+MAP);try{
 if(GEN[MAP]){buildGen();if(!MPM)buildItems();buildSpawnsOpen()}else if(MAP==='skyline'){buildSkyline();if(!MPM)buildItems();buildSpawnsOpen()}else if(MAP==='frost'){buildFrost();if(!MPM)buildItems();buildSpawnsOpen()}else if(OPEN){buildRoyale();if(!MPM)buildItems();buildSpawnsOpen()}else{buildGrids();buildWorld();buildCabin();buildItems();buildSpawns()}
 }finally{Math.random=_mr}}
+try{buildFoliage()}catch(e){console.warn('foliage',e)}
 if(MPM)mpOpenMap();
 buildMinimaps();setFloorLights(0);setupComposer();setupEnv();
 P.yaw=0;
