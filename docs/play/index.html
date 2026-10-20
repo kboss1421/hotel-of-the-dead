@@ -1143,12 +1143,73 @@ function buildGun(id,pap,arms,att,camo){
     const fa=B(.1,.1,.5,GM.skin,.03,-.2,.24,.55),sl=B(.12,.12,.2,GM.sleeve,.03,-.3,.46,.55),fb=two?B(.1,.1,.5,GM.skin,-.1,-.17,-.12,.45):null;if(fb)fb.rotation.y=-.5;for(const a of[fa,sl,fb])if(a)a.userData.arm=1;if(fb){fb.userData.rp=fb.position.clone();fb.userData.rr=fb.rotation.clone()}g.userData.fb=fb;
     // long sleeves in the field uniform (the cuff a shade darker) and gloves, as a modern soldier wears them
     if(REALISM){if(!RL_VM.sleeve){RL_VM.sleeve=new THREE.MeshStandardMaterial({map:RL.uni(RL.uniKind()),color:0x8f8b76,roughness:.9});RL_VM.cuff=new THREE.MeshStandardMaterial({map:RL.uni(RL.uniKind()),color:0x6f6b5a,roughness:.9})}
-      for(const a of[fa,sl,fb])if(a){a.geometry=RL_VM.arm;a.material=a===sl?RL_VM.cuff:RL_VM.sleeve;if(a!==sl)a.add(new THREE.Mesh(RL_VM.glove,RL_VM.gloveMat))}}
+      for(const a of[fa,sl,fb])if(a){a.geometry=RL_VM.arm;a.material=a===sl?RL_VM.cuff:RL_VM.sleeve;if(a!==sl)vmGlove(a)}vmPoseSupport(g,muzzle)}
   }
   g.userData.muzzle=muzzle;g.userData.two=two;
   return g;
 }
 
+// ================= FIRST-PERSON LOOK (Ultra / Cinematic): real gloves and sleeves, finished gun surfaces, lighting that matches the map =================
+// Textures are drawn once from their own seeded random (never the map's), so every player builds the same world.
+const VMX={};
+function vmTex(w,h,seed,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h,folRand(seed));const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=ANISO;return t}
+function vmNoise(g,w,h,r,lo,hi,blur){const im=g.getImageData(0,0,w,h),a=im.data;for(let i=0;i<a.length;i+=4){const v=lo+r()*(hi-lo);a[i]=a[i+1]=a[i+2]=v;a[i+3]=255}g.putImageData(im,0,0);if(blur){g.filter='blur('+blur+'px)';g.drawImage(g.canvas,0,0);g.filter='none'}}
+const VMT={
+  weave:()=>VMT._w||(VMT._w=vmTex(128,128,11,(g,w,h,r)=>{vmNoise(g,w,h,r,150,200);for(let y=0;y<h;y+=4)for(let x=0;x<w;x+=4){const on=((x>>2)+(y>>2))&1;g.fillStyle=on?'rgba(255,255,255,.22)':'rgba(0,0,0,.22)';g.fillRect(x,y,on?4:2,on?2:4)}})),
+  leather:()=>VMT._l||(VMT._l=vmTex(128,128,12,(g,w,h,r)=>{vmNoise(g,w,h,r,120,215,1.2);for(let i=0;i<160;i++){g.fillStyle=`rgba(0,0,0,${.08+r()*.12})`;g.beginPath();g.arc(r()*w,r()*h,.6+r()*1.6,0,7);g.fill()}})),
+  parker:()=>VMT._p||(VMT._p=vmTex(128,128,13,(g,w,h,r)=>vmNoise(g,w,h,r,95,235,.6))),
+  brushed:()=>VMT._b||(VMT._b=vmTex(256,64,14,(g,w,h,r)=>{vmNoise(g,w,h,r,150,200);for(let i=0;i<220;i++){const y=r()*h,l=40+r()*200;g.fillStyle=`rgba(${r()<.5?'0,0,0':'255,255,255'},${.05+r()*.12})`;g.fillRect(r()*w,y,l,.7)}})),
+  grain:()=>VMT._g||(VMT._g=vmTex(64,256,15,(g,w,h,r)=>{g.fillStyle='rgb(205,205,205)';g.fillRect(0,0,w,h);for(let i=0;i<46;i++){const x0=r()*w,amp=1+r()*3,ph=r()*6,dk=.1+r()*.25;g.strokeStyle=`rgba(40,22,10,${dk})`;g.lineWidth=.6+r()*1.6;g.beginPath();
+    for(let y=0;y<=h;y+=4){const x=x0+Math.sin(y*.03+ph)*amp+Math.sin(y*.11+ph*2)*amp*.4;y?g.lineTo(x,y):g.moveTo(x,y)}g.stroke()}for(let i=0;i<5;i++){g.strokeStyle='rgba(40,22,10,.35)';g.beginPath();g.ellipse(r()*w,r()*h,2+r()*3,6+r()*10,0,0,7);g.stroke()}}))};
+// a gloved hand in metres: x across the knuckles, y = back of the hand, fingers point to -z and curl down to wrap a grip
+function vmHandGeos(){if(VMX.hand)return VMX.hand;const fab=[],knk=[],palm=[],cuff=[],m=new THREE.Matrix4(),q=new THREE.Matrix4();
+  const cap=(r1,r2,len)=>{const c=new THREE.CylinderGeometry(r2,r1,len,12,1,true);c.rotateX(-Math.PI/2);c.translate(0,0,-len/2);return c},ball=r=>new THREE.SphereGeometry(r,12,8);
+  const add=(list,geo,mat)=>{geo.applyMatrix4(mat);list.push(geo)};
+  add(fab,roundedBox(.084,.032,.094,.013,3),m.makeTranslation(0,0,-.036));                                  // back of the hand / palm block
+  add(palm,roundedBox(.078,.008,.08,.004,2),m.makeTranslation(0,-.016,-.04));                              // leather palm
+  add(knk,roundedBox(.078,.012,.026,.005,2),m.makeTranslation(0,.019,-.07));                               // hard knuckle guard
+  const F=[[.042,.026,.021,.0098],[.046,.029,.022,.0102],[.043,.027,.021,.0098],[.034,.021,.018,.0088]],CURL=[.9,1.15,.7];
+  F.forEach(([a,b,c2,r],i)=>{const x=(-1.5+i)*.0205,base=new THREE.Matrix4().makeTranslation(x,-.003,-.082);let M=base.clone(),cum=0;
+    [a,b,c2].forEach((len,k)=>{cum+=CURL[k]*(i===3?1.1:1);const R=new THREE.Matrix4().makeRotationX(-cum*(k?1:.8));const S=M.clone().multiply(R);
+      add(fab,cap(r*(1-k*.06),r*(.94-k*.06),len),S);add(fab,ball(r*(1-k*.06)),M.clone());
+      if(k===0)add(knk,roundedBox(r*1.7,r*.9,len*.55,r*.4,1),S.clone().multiply(new THREE.Matrix4().makeTranslation(0,r*.75,-len*.45)));   // padded finger backs
+      M=S.clone().multiply(new THREE.Matrix4().makeTranslation(0,0,-len))});add(fab,ball(r*.84),M)});
+  {let M=new THREE.Matrix4().makeTranslation(.04,-.01,-.026).multiply(new THREE.Matrix4().makeRotationY(.55)).multiply(new THREE.Matrix4().makeRotationX(-.55)).multiply(new THREE.Matrix4().makeRotationZ(-.4));   // thumb
+    for(const[len,r]of[[.036,.012],[.03,.011]]){add(fab,cap(r,r*.93,len),M.clone());add(fab,ball(r),M.clone());M=M.clone().multiply(new THREE.Matrix4().makeTranslation(0,0,-len)).multiply(new THREE.Matrix4().makeRotationX(-.35))}add(fab,ball(.0103),M)}
+  add(cuff,new THREE.CylinderGeometry(.037,.034,.034,16,1,true).rotateX(Math.PI/2),m.makeTranslation(0,-.002,.008));   // glove cuff with a strap
+  add(cuff,roundedBox(.05,.012,.022,.004,1),m.makeTranslation(0,.034,.006));
+  const fin=l=>unitize(mergeG(l),.1,.1,.5).translate(0,0,-.5);return VMX.hand={fab:fin(fab),knk:fin(knk),palm:fin(palm),cuff:fin(cuff)}}
+function vmHandMats(){if(VMX.hm)return VMX.hm;const w=VMT.weave(),l=VMT.leather();w.repeat.set(3,3);l.repeat.set(2,2);
+  return VMX.hm={fab:new THREE.MeshStandardMaterial({color:0x34352e,map:w,bumpMap:w,bumpScale:.006,roughness:.92,metalness:0}),
+    knk:new THREE.MeshStandardMaterial({color:0x1c1d1b,bumpMap:l,bumpScale:.004,roughness:.48,metalness:0}),
+    palm:new THREE.MeshStandardMaterial({color:0x4a3e30,map:l,bumpMap:l,bumpScale:.008,roughness:.7,metalness:0}),
+    cuff:new THREE.MeshStandardMaterial({color:0x2a2b26,map:w,bumpMap:w,bumpScale:.005,roughness:.9,metalness:0})}}
+// support hand on the handguard where you can see it: forearm up from a low-left elbow, back of the hand down-left so the fingers wrap the handguard
+function vmPoseSupport(g,mz){const fb=g.userData.fb;if(!fb)return;const T=new THREE.Vector3(-.052,-.062,(mz||-.5)*.6),E=new THREE.Vector3(-.32,-.3,.14),dv=T.clone().sub(E).normalize();
+  const zA=dv.clone().negate(),yA=new THREE.Vector3(-.75,-.65,0).normalize();yA.sub(zA.clone().multiplyScalar(yA.dot(zA))).normalize();const xA=new THREE.Vector3().crossVectors(yA,zA);
+  fb.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xA,yA,zA));fb.position.copy(T).addScaledVector(dv,-.25);fb.userData.rp.copy(fb.position);fb.userData.rr.copy(fb.rotation)}
+function vmGlove(arm){const G=vmHandGeos(),M=vmHandMats();for(const k of['fab','knk','palm','cuff'])arm.add(new THREE.Mesh(G[k],M[k]))}
+// sleeves: slimmer forearm with a rolled cuff, field-uniform fabric with a visible weave
+if(REALISM){RL_VM.arm=latheG([[0,-.5],[.3,-.5],[.36,-.47],[.385,-.43],[.35,-.39],[.36,-.3],[.4,-.1],[.44,.2],[.455,.38],[.4,.47],[.24,.5],[0,.51]],20).rotateX(Math.PI/2)}
+function vmFinishSleeves(){if(VMX.sl||!RL_VM.sleeve)return;VMX.sl=1;const w=VMT.weave();const b=w.clone();b.needsUpdate=true;b.repeat.set(26,12);for(const m of[RL_VM.sleeve,RL_VM.cuff]){m.bumpMap=b;m.bumpScale=.0035;m.roughness=.95;m.needsUpdate=true}}
+// gun finishes: parkerised grain on dark metal, brushed steel, wood grain on the furniture
+function vmFinishGuns(){if(VMX.gun||!REALISM)return;VMX.gun=1;const p=VMT.parker(),b=VMT.brushed(),g=VMT.grain();
+  Object.assign(GM.dark,{roughnessMap:p,bumpMap:p,bumpScale:.0014,roughness:.62});Object.assign(GM.metal,{roughnessMap:b,bumpMap:b,bumpScale:.0012,roughness:.4});
+  Object.assign(GM.wood,{map:g,bumpMap:g,bumpScale:.004,roughness:.6});Object.assign(GM.tan,{bumpMap:p,bumpScale:.003});Object.assign(GM.olive,{bumpMap:p,bumpScale:.003});
+  for(const m of[GM.dark,GM.metal,GM.wood,GM.tan,GM.olive])m.needsUpdate=true}
+// lighting: the first-person scene copies the map's sun, sky and ambient each frame (so night maps are dark, sunsets warm),
+// reflects the map's sky (or a soft studio light indoors), and the muzzle flash lights up your hands
+function vmLights(){if(!REALISM)return;if(!VMX.l){VMX.l=1;vmFinishGuns();vmFinishSleeves();
+    VMX.hemi=new THREE.HemisphereLight(0xffffff,0x444444,0);gunScene.add(VMX.hemi);VMX.flash=new THREE.PointLight(0xffb060,0,2.2,2);VMX.flash.position.set(.18,-.05,-.9);gunScene.add(VMX.flash);
+    VMX.sun=scene.children.find(o=>o.isDirectionalLight&&o.castShadow)||scene.children.find(o=>o.isDirectionalLight);VMX.wh=scene.children.find(o=>o.isHemisphereLight);VMX.wa=scene.children.find(o=>o.isAmbientLight);
+    VMX.amb=gunScene.children.find(o=>o.isAmbientLight);
+    try{if(THREE.RoomEnvironment){const pm=new THREE.PMREMGenerator(renderer);VMX.room=pm.fromScene(new THREE.RoomEnvironment(),.04).texture;pm.dispose()}}catch(e){}}
+  const env=scene.environment||VMX.room||null;if(gunScene.environment!==env)gunScene.environment=env;
+  const sun=VMX.sun;if(sun){VMX.d=VMX.d||new THREE.Vector3();VMX.q=VMX.q||new THREE.Quaternion();VMX.d.copy(sun.position).sub(sun.target.position).normalize().applyQuaternion(VMX.q.copy(camera.quaternion).invert());
+    gDir.position.copy(VMX.d);gDir.color.copy(sun.color);gDir.intensity=sun.intensity*.85}
+  if(VMX.wh){VMX.hemi.color.copy(VMX.wh.color);VMX.hemi.groundColor.copy(VMX.wh.groundColor);VMX.hemi.intensity=VMX.wh.intensity*.9}
+  if(VMX.amb)VMX.amb.intensity=VMX.wa?VMX.wa.intensity*.9:(VMX.wh?.12:.45);
+  const cg=curGun(),d0=cg?def(cg):{};VMX.flash.intensity=now-P.lastShot<.05&&!d0.quiet&&!d0.hideFlash&&!d0.projectile?3.2:0}
 // ================= audio =================
 let AC=null,master=null,noiseBuf=null;
 function initAudio(){
@@ -2199,7 +2260,7 @@ function updateViewModel(dt){
   if(P.busyT>0){y-=Math.min(.35,P.busyT*.5)}
   if(vm.melee>0){const t=Math.sin(vm.melee/.35*Math.PI);x-=t*.2;ry+=t*.9;rz-=t*.4}
   if((scoped(d)||d.ret==='acog')&&k>.9)y-=1;
-  gunHolder.position.set(x,y,z);gunHolder.rotation.set(rx,ry,rz);vmSupportHand();{const kc=vm.group.userData.kc;if(kc)kc.rotation.z=Math.sin(P.bob*2)*.25+vm.kick*.7+Math.sin(now*3)*.05}
+  gunHolder.position.set(x,y,z);gunHolder.rotation.set(rx,ry,rz);vmSupportHand();vmLights();{const kc=vm.group.userData.kc;if(kc)kc.rotation.z=Math.sin(P.bob*2)*.25+vm.kick*.7+Math.sin(now*3)*.05}
   vm.flash.visible=now-P.lastShot<.04&&!d.projectile&&!d.quiet&&!d.hideFlash;vm.flash.material.color.set(w.pap?0xd080ff:0xffd070);
 }
 
@@ -3798,7 +3859,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.19.2112';
+const GAME_VERSION=/*VER*/'2026.10.19.2121';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
