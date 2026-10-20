@@ -1635,7 +1635,20 @@ function armIK(sh,target,pole){const a=HB.upper[2],b=HB.fore[2]+HB.hand[1]*.42;c
 // ---- trees: real bark on trunks, canopies recorded so the foliage pass can cover them in leaves (never uses the map's seeded random)
 const BARKc={};function barkMat(c){return BARKc[c]||(BARKc[c]=new THREE.MeshStandardMaterial({color:new THREE.Color(c).multiplyScalar(.95),flatShading:!SMOOTH(),userData:{scan:'bark'},roughness:.95,metalness:0}))}
 const LEAVES=[];function leafReg(m,kind){const g=m.geometry.parameters||{},r=g.radius||1;LEAVES.push({m,x:m.position.x,y:m.position.y,z:m.position.z,rx:r*m.scale.x,ry:r*m.scale.y,h:(g.height||0)*m.scale.y,col:m.material.color.getHex(),kind});
-  if(folDensity()>0&&kind!==2)m.scale.multiplyScalar(.86)}   // the solid canopy becomes a darker core under the leaves
+  if(folDensity()>0){m.layers.set(1);m.userData.noMerge=1}}   // the solid canopy moves to the shadow-only layer: it casts the tree's shadow, the leaves make the crown
+// ---- trunks shaped like real logs: deep vertical bark ridges, a slight twist and lean, a flared root; same size and place as before
+// (the shape comes from each trunk's position, never the map's seeded random)
+function trunkGeo(rT,rB,h,seed,flare){const g=new THREE.CylinderGeometry(rT,rB,h,16,7,false),p=g.attributes.position,v=new THREE.Vector3();const s1=seed*1.7,s2=seed*.37,lean=Math.sin(seed*2.3)*.035;
+  for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);const t=(v.y+h/2)/h,rr=Math.hypot(v.x,v.z);if(rr<1e-5)continue;const a=Math.atan2(v.z,v.x)+t*.5;
+    let k=1-.26*Math.pow(.5+.5*Math.sin(a*7+s1+Math.sin(t*9+s2)*.6),2.2)-.09*Math.pow(.5+.5*Math.sin(a*17+s2*3+t*3),2)+.05*Math.sin(t*23+a*3+s1);   // ridges, finer cracks, knots
+    if(flare&&t<.2){const f=1-t/.2;k*=1+.95*f*f*(.7+.45*Math.sin(a*5+s1))}   // root flare with buttress lobes
+    const nr=rr*k;v.x=v.x/rr*nr+lean*t*t*h;v.z=v.z/rr*nr+lean*.6*t*t*h;p.setXYZ(i,v.x,v.y,v.z)}
+  g.computeVertexNormals();return g}
+function barkReshape(grp){if(!REALISM)return;grp.updateMatrixWorld(true);const wp=new THREE.Vector3();
+  grp.traverse(o=>{if(!o.isMesh||!o.material||!o.material.userData||o.material.userData.scan!=='bark'||o.userData.trunk)return;const g=o.geometry,pr=g.parameters||{};o.getWorldPosition(wp);const seed=wp.x*3.1+wp.z*7.7;
+    if(g.type==='CylinderGeometry'){o.geometry=trunkGeo(pr.radiusTop,pr.radiusBottom,pr.height,seed,pr.height>1.6&&Math.abs(o.rotation.x)<.05&&Math.abs(o.rotation.z)<.05)}
+    else if(o.scale&&o.scale.y>1){o.geometry=trunkGeo(.42,.5,1,seed,true)}   // pine trunks were scaled unit boxes
+    o.userData.trunk=1})}
 // ---- rocks: lumpy, weathered stone (same size and place as before), mossy rock texture
 const ROCKG=[];function rockGeo(v){if(ROCKG[v])return ROCKG[v];const g=new THREE.IcosahedronGeometry(1,2),p=g.attributes.position,q=new THREE.Vector3();
   const n=(x,y,z)=>Math.sin(x*1.7+v*3.1)*Math.cos(y*2.3+v)*Math.sin(z*1.9-v*1.7)+.5*Math.sin(x*4.1-y*3.7+z*3.3+v*2.2);
@@ -2796,10 +2809,10 @@ function addGrass(grp,g,S,isGrass,n){const geo=new THREE.ConeGeometry(.045,.32,3
     o.position.set(x,S,z);o.rotation.set(rnd(-.3,.3),rnd(0,6),rnd(-.3,.3));o.scale.set(1,rnd(.6,1.5),1);o.updateMatrix();im.setMatrixAt(k,o.matrix);im.setColorAt(k,c.setHex(pick([0x4c9a34,0x5aa83c,0x3f8a2e,0x6ab448])));k++}
   im.count=k;im.visible=!folDensity();grp.add(im)}   // (hidden, but still built the same way, when the 3D grass replaces it)
 // merge static scenery that shares a material into one mesh (big draw-call saving)
-function mergeStatic(grp){if(/nomerge/.test(location.search))return 0;
+function mergeStatic(grp){barkReshape(grp);if(/nomerge/.test(location.search))return 0;
   const exclude=new Set();for(const zn of ZONES)for(const m of zn.meshes)exclude.add(m);
   grp.updateMatrixWorld(true);const byMat=new Map();
-  grp.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||exclude.has(o))return;const m=o.material;if(Array.isArray(m)||m.transparent||m.map)return;
+  grp.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||exclude.has(o)||o.userData.noMerge)return;const m=o.material;if(Array.isArray(m)||m.transparent||m.map)return;
     if(!byMat.has(m))byMat.set(m,[]);byMat.get(m).push(o)});
   let before=0,after=0;
   for(const[mat,list]of byMat){before+=list.length;if(list.length<2){after++;continue}
@@ -2852,7 +2865,7 @@ function buildFrost(){
     for(let i=0;i<3;i++)fb(rnd(x0+1,x1),S+y+.8,rnd(z0+1,z1),rnd(.6,1.1),.7,rnd(.6,1.1),0x6a6e72)};
   const pine=(x,z,s=1,solid=true)=>{if(solid)mark(Math.floor(x),Math.floor(z),Math.floor(x),Math.floor(z),T.TREE);fb(x,S+.8*s,z,.35*s,1.6*s,.35*s,barkMat(0x5a3a22));
     for(let i=0;i<3;i++){const r=(1.5-i*.4)*s;const c=new THREE.Mesh(new THREE.ConeGeometry(r,1.7*s,SG(7)),LP(pick([0x2e5a3a,0x355f40,0x2a5236])));c.position.set(x,S+(1.9+i*1.05)*s,z);c.rotation.y=rnd(0,3);grp.add(c);leafReg(c,2);
-      const sc=new THREE.Mesh(new THREE.ConeGeometry(r*.62,.7*s,SG(7)),LP(SNOW));sc.position.set(x,S+(2.45+i*1.05)*s,z);sc.rotation.y=c.rotation.y;grp.add(sc)}};
+      const sc=new THREE.Mesh(new THREE.ConeGeometry(r*.62,.7*s,SG(7)),LP(SNOW));sc.position.set(x,S+(2.45+i*1.05)*s,z);sc.rotation.y=c.rotation.y;grp.add(sc);if(folDensity()>0){sc.layers.set(1);sc.userData.noMerge=1}}};   // the snow now sits on the needles
   const truck=(x0,z0,alongX,color)=>{if(typeof color==='number')color=metalMat(color,.4);const x1=x0+(alongX?5:2)-1,z1=z0+(alongX?2:5)-1;mark(x0,z0,x1,z1,T.CAR);for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)setH(0,x,z,2.3);const o=new THREE.Group();o.position.set((x0+x1+1)/2,S,(z0+z1+1)/2);if(alongX)o.rotation.y=Math.PI/2;grp.add(o);
     fb(0,1.0,-1.5,1.9,1.3,1.6,color,o);fb(0,1.2,-1.5,1.92,.5,1.0,new THREE.MeshStandardMaterial({color:0x2a3a4a,flatShading:!SMOOTH(),roughness:.2}),o);fb(0,.75,.7,1.9,.5,3.1,color,o);
     fb(0,1.6,.7,1.95,1.2,3.1,0x6a7a5a,o);fb(0,2.25,.7,2.0,.15,3.2,SNOW,o);fb(0,1.72,-1.5,1.95,.12,1.62,SNOW,o);
@@ -3859,7 +3872,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.19.2121';
+const GAME_VERSION=/*VER*/'2026.10.19.2258';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -6274,6 +6287,7 @@ function folMat(sway,rough){const m=new THREE.MeshStandardMaterial({vertexColors
     sh.fragmentShader=sh.fragmentShader.replace('#include <normal_fragment_begin>','float faceDirection=1.0;vec3 normal=normalize(vNormal);vec3 geometryNormal=normal;');};
   m.customProgramCacheKey=()=>'fol'+sway;FOL.mats.push(m);return m}
 function buildFoliage(){const dens=folDensity();if(!dens)return;
+  scene.traverse(o=>{if(o.isDirectionalLight&&o.castShadow)o.shadow.camera.layers.enable(1)});   // the sun still sees the hidden canopies, so trees keep their shadows
   {const wp=new THREE.Vector3();for(const L of LEAVES){if(L.m){if(L.m.parent)L.m.updateWorldMatrix(true,false);wp.setFromMatrixPosition(L.m.matrixWorld);L.x=wp.x;L.y=wp.y;L.z=wp.z;L.m=null}}}   // canopy world positions (some maps build their scenery in an offset group)
   // ground colour per cell, read back from the vertex-coloured ground plane
   let ground=null;scene.traverse(o=>{if(ground||!o.isMesh||!o.geometry||!o.geometry.attributes.color)return;const gb=o.geometry;if(!gb.boundingBox)gb.computeBoundingBox();const bb=gb.boundingBox;
@@ -6329,28 +6343,44 @@ function leafTex(){return FOL.leafT||(FOL.leafT=(()=>{const cv=document.createEl
     g.strokeStyle='rgba(0,0,0,.28)';g.lineWidth=1.2;g.beginPath();g.moveTo(-L*1.15,0);g.lineTo(L*.9,0);g.stroke();
     for(const s of[-1,1])for(let k=1;k<4;k++){g.beginPath();g.moveTo(-L*.6+k*L*.38,0);g.lineTo(-L*.3+k*L*.38,s*Wd*.55);g.stroke()}g.restore()}
   const t=new THREE.CanvasTexture(cv);t.encoding=THREE.sRGBEncoding;t.anisotropy=ANISO;return t})())}
-function leafMat(sway){const k='leafM'+sway;if(FOL[k])return FOL[k];const m=new THREE.MeshStandardMaterial({map:leafTex(),alphaTest:.5,side:THREE.DoubleSide,roughness:.72,metalness:0});
+function needleTex(){return FOL.needT||(FOL.needT=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=256;const g=cv.getContext('2d'),r=folRand(93);g.lineCap='round';
+  for(let s=0;s<9;s++){const x0=30+r()*196,y0=30+r()*196,a=r()*6.3,L=60+r()*50;g.strokeStyle='rgb(90,80,60)';g.lineWidth=2.4;g.beginPath();g.moveTo(x0,y0);g.lineTo(x0+Math.cos(a)*L,y0+Math.sin(a)*L);g.stroke();   // twig
+    for(let i=0;i<34;i++){const t=i/34,px=x0+Math.cos(a)*L*t,py=y0+Math.sin(a)*L*t,v=150+Math.floor(r()*105);g.strokeStyle=`rgb(${v},${v},${v})`;g.lineWidth=1.3;
+      for(const sd of[-1,1]){const b=a+sd*(.75+r()*.35),l=10+r()*9*(1-t*.4);g.beginPath();g.moveTo(px,py);g.lineTo(px+Math.cos(b)*l,py+Math.sin(b)*l);g.stroke()}}}
+  const t=new THREE.CanvasTexture(cv);t.encoding=THREE.sRGBEncoding;t.anisotropy=ANISO;return t})())}
+function leafMat(sway,needle){const k='leafM'+sway+(needle?'n':'');if(FOL[k])return FOL[k];const m=new THREE.MeshStandardMaterial({map:needle?needleTex():leafTex(),alphaTest:.5,side:THREE.DoubleSide,roughness:.72,metalness:0});
   m.onBeforeCompile=sh=>{sh.uniforms.fTime=FOL.u.time;sh.vertexShader='uniform float fTime;\n'+sh.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
     vec3 lRoot=(instanceMatrix*vec4(0.,0.,0.,1.)).xyz;transformed.xy+=vec2(sin(fTime*2.1+lRoot.x*1.3+lRoot.z),cos(fTime*1.7+lRoot.z*1.1+lRoot.y))*${sway.toFixed(3)};`);
     sh.fragmentShader=sh.fragmentShader.replace('#include <normal_fragment_begin>','float faceDirection=1.0;vec3 normal=normalize(vNormal);vec3 geometryNormal=normal;')};
   m.customProgramCacheKey=()=>'leaf'+sway;return FOL[k]=m}
 function buildLeaves(dens){if(!LEAVES.length)return;const r=folRand(seededHash('leaf-'+MAP)),o=new THREE.Object3D(),c=new THREE.Color(),list=[],tg=new THREE.Vector3();
-  for(const L of LEAVES){if(L.kind===2){const rr=L.rx,h=L.h,n=Math.round(Math.PI*rr*Math.hypot(rr,h)*1.2*dens);   // pine: needle sprays down the cone
-      for(let i=0;i<n;i++){const t=r(),a=r()*6.283,rad=rr*(1-t)*1.03;list.push([L.x+Math.cos(a)*rad,L.y-h/2+t*h,L.z+Math.sin(a)*rad,Math.cos(a),.5,Math.sin(a),.34+r()*.16,L.col,2])}}
-    else{const rm=(L.rx+L.ry)/2,n=Math.round(4*Math.PI*rm*rm*1.25*dens);
-      for(let i=0;i<n;i++){let nx=r()*2-1,ny=r()*2-1,nz=r()*2-1;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;const k=.9+r()*.18;list.push([L.x+nx*L.rx*k,L.y+ny*L.ry*k,L.z+nz*L.rx*k,nx,ny*.7+.3,nz,.75+r()*.45,L.col,1])}}}
-  if(!list.length)return;const card=new THREE.PlaneGeometry(1,1);card.boundingSphere=new THREE.Sphere(new THREE.Vector3(0,4,0),15);const mat=leafMat(.035),byC=new Map();
-  for(const e of list){const k=Math.floor(e[0]/16)+','+Math.floor(e[2]/16);if(!byC.has(k))byC.set(k,[]);byC.get(k).push(e)}
-  FOL.leafChunks=[];for(const[k,arr]of byC){const[a,b]=k.split(',').map(Number),cx=a*16+8,cz=b*16+8,cy=Math.min(...arr.map(e=>e[1]));const im=new THREE.InstancedMesh(card,mat,arr.length);im.position.set(cx,cy,cz);
-    arr.forEach(([x,y,z,nx,ny,nz,s,col,kk],i)=>{o.position.set(x-cx,y-cy,z-cz);tg.set(x+nx,y+ny,z+nz).sub(im.position);o.lookAt(tg);o.rotateZ(r()*6.283);o.scale.set(kk===2?s*.55:s,s,s);o.updateMatrix();im.setMatrixAt(i,o.matrix);
-      c.setHex(col).offsetHSL((r()-.5)*.05,.08,.04+(r()-.5)*.12).multiplyScalar(1.75);im.setColorAt(i,c)});
+  const snowy=MAP==='frost';
+  for(const L of LEAVES){if(L.kind===2){const rr=L.rx,h=L.h,n=Math.round(Math.PI*rr*Math.hypot(rr,h)*12*dens);   // pine: needle sprays through each tier, drooping outward
+      for(let i=0;i<n;i++){const t=Math.pow(r(),1.3),a=r()*6.283,u=.3+.7*Math.sqrt(r()),rad=rr*(1-t)*1.02*u,sn=snowy&&r()<.3;
+        list.push([L.x+Math.cos(a)*rad,L.y-h/2+t*h,L.z+Math.sin(a)*rad,Math.cos(a)*(sn?.3:1),sn?1:.25-.5*r(),Math.sin(a)*(sn?.3:1),.8+r()*.5,sn?0xdfe6ee:L.col,2,sn?.6:.5+.5*u])}}
+    else{const rm=(L.rx+L.ry)/2,n=Math.round(4*Math.PI*rm*rm*4.4*dens);   // a crown of leaf clusters through the volume (outer shell densest), with gaps you can see through
+      for(let i=0;i<n;i++){let nx=r()*2-1,ny=r()*2-1,nz=r()*2-1;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;const k=.3+.75*Math.cbrt(r());
+        list.push([L.x+nx*L.rx*k,L.y+ny*L.ry*k,L.z+nz*L.rx*k,nx+(r()-.5)*.8,ny*.6+.4+(r()-.5)*.6,nz+(r()-.5)*.8,.62+r()*.55,L.col,1,.5+.5*k])}}}
+  if(!list.length)return;const card=new THREE.PlaneGeometry(1,1);card.boundingSphere=new THREE.Sphere(new THREE.Vector3(0,4,0),15);const byC=new Map();
+  for(const e of list){const k=Math.floor(e[0]/16)+','+Math.floor(e[2]/16)+','+e[8];if(!byC.has(k))byC.set(k,[]);byC.get(k).push(e)}
+  FOL.leafChunks=[];for(const[k,arr]of byC){const[a,b,kind]=k.split(',').map(Number),mat=leafMat(.035,kind===2),cx=a*16+8,cz=b*16+8,cy=Math.min(...arr.map(e=>e[1]));for(let i=arr.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}const im=new THREE.InstancedMesh(card,mat,arr.length);im.position.set(cx,cy,cz);im.userData.full=arr.length;
+    arr.forEach(([x,y,z,nx,ny,nz,s,col,kk,sh],i)=>{o.position.set(x-cx,y-cy,z-cz);tg.set(x+nx,y+ny,z+nz).sub(im.position);o.lookAt(tg);o.rotateZ(r()*6.283);o.scale.set(s,kk===2?s*.75:s,s);o.updateMatrix();im.setMatrixAt(i,o.matrix);
+      c.setHex(col).offsetHSL((r()-.5)*.05,.08,.04+(r()-.5)*.12).multiplyScalar(1.75*(sh||1));im.setColorAt(i,c)});   // inner leaves sit in the crown's shade
     im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;im.castShadow=false;im.receiveShadow=true;im.matrixAutoUpdate=false;im.updateMatrix();scene.add(im);FOL.leafChunks.push({x:cx,z:cz,m:im})}
+  const limbs=[],up=new THREE.Vector3(0,1,0),qq=new THREE.Quaternion(),A=new THREE.Vector3(),B=new THREE.Vector3();
+  for(const L of LEAVES){if(L.kind!==2)continue;const yb=L.y-L.h*.42;for(let i=0;i<6;i++){const a=i/6*6.283+r()*.5;A.set(L.x,yb+L.h*.15,L.z);B.set(L.x+Math.cos(a)*L.rx*.92,yb-L.h*.05,L.z+Math.sin(a)*L.rx*.92);
+      const dv=B.clone().sub(A),len=dv.length(),gm=new THREE.CylinderGeometry(.008,.03,len,5,1,true);gm.translate(0,len/2,0);qq.setFromUnitVectors(up,dv.normalize());gm.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(qq));gm.translate(A.x,A.y,A.z);limbs.push(gm)}
+    const tr=new THREE.CylinderGeometry(.03,.1,L.h*1.1,6,1,true);tr.translate(L.x,L.y-L.h*.05,L.z);limbs.push(tr)}   // the trunk runs up through the crown
+  for(const L of LEAVES){if(L.kind!==1||L.ry<.5)continue;A.set(L.x,L.y-L.ry*.95,L.z);const nb=4+Math.floor(r()*2);
+    for(let i=0;i<=nb;i++){const a=r()*6.283,ext=i===nb?.05:.55+r()*.35;B.set(L.x+Math.cos(a)*L.rx*ext,L.y+L.ry*(i===nb?.45:-.15+r()*.55),L.z+Math.sin(a)*L.rx*ext);
+      const dv=B.clone().sub(A),len=dv.length(),rb=Math.min(.09,.035+L.rx*.025),gm=new THREE.CylinderGeometry(rb*.3,rb,len,6,1,true);gm.translate(0,len/2,0);qq.setFromUnitVectors(up,dv.normalize());gm.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(qq));gm.translate(A.x,A.y,A.z);limbs.push(gm)}}
+  if(limbs.length){const lm=new THREE.Mesh(mergeG(limbs),barkMat(0x4a3424));lm.castShadow=false;lm.receiveShadow=true;scene.add(lm)}
   FOL.leaves={count:list.length};FOL.on=true}
 let folT=0;
 function foliageUpdate(dt){FOL.u.time.value+=dt;if(P)FOL.u.pl.value.set(P.x,P.y,P.z);folT-=dt;if(folT>0)return;folT=.2;
   const cx=camera.position.x,cz=camera.position.z,R=FOL.R+6;for(const ch of FOL.chunks){const dd=Math.hypot(ch.x-cx,ch.z-cz),v=dd<R,f=dd<14?1:dd<24?.32:.1;
     for(const m of ch.items){m.visible=v;if(v)m.count=m.userData.lod?Math.max(1,Math.round(m.userData.full*f)):m.userData.full}}
-  if(FOL.leafChunks)for(const lc of FOL.leafChunks)lc.m.visible=Math.hypot(lc.x-cx,lc.z-cz)<68}
+  if(FOL.leafChunks)for(const lc of FOL.leafChunks){const dd=Math.hypot(lc.x-cx,lc.z-cz);lc.m.visible=dd<60;if(dd<60)lc.m.count=Math.max(1,Math.round(lc.m.userData.full*(dd<24?1:dd<42?.55:.3)))}}
 // ================= boot =================
 {const _mr=Math.random;if(OPEN)Math.random=seededRand('map-'+MAP);try{
 if(GEN[MAP]){buildGen();if(!MPM)buildItems();buildSpawnsOpen()}else if(MAP==='skyline'){buildSkyline();if(!MPM)buildItems();buildSpawnsOpen()}else if(MAP==='frost'){buildFrost();if(!MPM)buildItems();buildSpawnsOpen()}else if(OPEN){buildRoyale();if(!MPM)buildItems();buildSpawnsOpen()}else{buildGrids();buildWorld();buildCabin();buildItems();buildSpawns()}
