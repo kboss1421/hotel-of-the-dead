@@ -518,7 +518,7 @@ const SCAN_SETS={bark_brown_02:[2,[.1191,.0972,.0573],.902],rust_coarse_01:[1.6,
   leafy_grass:[3,[.3104,.2289,.1007],.685],mossy_rock:[2.5,[.1542,.1486,.0965],.806],snow_02:[3,[.3782,.3778,.3878],.801],asphalt_01:[3,[.1003,.0799,.0619],.771],
   dirty_carpet:[2,[.0356,.0284,.0184],.812],decrepit_wallpaper:[1.6,[.1843,.1467,.1116],.927],marble_01:[2,[.4424,.3372,.1938],.506],plastered_wall:[2.5,[.4354,.392,.3345],.912],
   cobblestone_floor_04:[2.5,[.2648,.2153,.1331],.627]};
-const SCAN_KIND={paint:['concrete_floor_painted','concrete_floor_painted'],bark:['bark_brown_02','bark_brown_02'],rock:['mossy_rock','mossy_rock'],metalx:['metal_plate','metal_plate'],sand:['coast_sand_01','sandstone_brick_wall_01'],conc:['concrete_floor_worn_001','concrete_wall_003'],light:['concrete_floor_painted','beige_wall_001'],
+const SCAN_KIND={paintw:['concrete_floor_painted','plastered_wall'],paint:['concrete_floor_painted','concrete_floor_painted'],bark:['bark_brown_02','bark_brown_02'],rock:['mossy_rock','mossy_rock'],metalx:['metal_plate','metal_plate'],sand:['coast_sand_01','sandstone_brick_wall_01'],conc:['concrete_floor_worn_001','concrete_wall_003'],light:['concrete_floor_painted','beige_wall_001'],
   brick:['red_brick','red_brick_03'],wood:['wood_floor','weathered_brown_planks'],metal:['metal_plate','metal_plate'],grass:['leafy_grass','mossy_rock'],snow:['snow_02','plastered_wall'],
   dark:['asphalt_01','metal_plate'],quartz:['marble_01','marble_01'],stone:['cobblestone_floor_04','mossy_rock'],ceiling:['plastered_wall','plastered_wall'],
   bed:['dirty_carpet','dirty_carpet'],carpet:['dirty_carpet','decrepit_wallpaper'],wallpaper:['dirty_carpet','decrepit_wallpaper']};
@@ -544,11 +544,11 @@ function scanKindOf(m){const u=m.userData;if(u._sk!==undefined)return u._sk;let 
       if(S>.55&&L>.32)k=null;
       else if(L<.12)k='dark';
       else if(S<.12)k=L>.86?(H>180&&H<260?'snow':'light'):L>.55?'light':'conc';
-      else if(H>=70&&H<170)k='grass';
+      else if(H>=70&&H<170)k=S>.3&&L>.22?'paintw':'grass';
       else if(H<16||H>=340)k=S>.28?'brick':'conc';
       else if(H<48)k=L>.52?'sand':S>.22?'wood':'conc';
       else if(H<70)k=L>.5?'sand':'grass';
-      else k=L>.5?'light':'metal'}}
+      else k=L>.5?'light':'paintw'}}
   u._sk=k;return k}
 const SCAN_GLSL=`uniform sampler2D scA0,scN0,scA1,scN1,scRA;uniform vec3 scM0,scM1,scTint,scRM;uniform float scOn0,scOn1,scS0,scS1,scR0,scR1,scMode,scRust,scROn;
 float scH(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
@@ -630,13 +630,28 @@ function sunFollow(){let sun=SUNF.sun;if(!sun||sun.parent!==scene){sun=SUNF.sun=
   sun.target.position.copy(p);sun.position.copy(p).add(SUNF.off);sun.target.updateMatrixWorld();sun.updateMatrixWorld();if(renderer.shadowMap.enabled)renderer.shadowMap.needsUpdate=true}
 // soft cloud puffs and a sun glow in place of the solid low-poly clouds
 function realSky(dome){dome.userData.real=1;
-  const puff=canvasTex(128,128,g=>{for(let i=0;i<9;i++){const x=34+Math.random()*60,y=44+Math.random()*40,r=22+Math.random()*26,gr=g.createRadialGradient(x,y,0,x,y,r);
+  const puff=canvasTex(128,128,g=>{for(let i=0;i<9;i++){const r=18+Math.random()*20,x=r+2+Math.random()*(124-2*r),y=Math.max(r+2,Math.min(126-r,44+Math.random()*40)),gr=g.createRadialGradient(x,y,0,x,y,r);
       gr.addColorStop(0,'rgba(255,255,255,.55)');gr.addColorStop(.6,'rgba(255,255,255,.22)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,128,128)}},true);
   for(const cl of[...dome.children])if(cl.isMesh&&cl.geometry&&cl.geometry.type==='IcosahedronGeometry'){
     const r=cl.geometry.parameters.radius,col=cl.material.color;cl.visible=false;
     for(let i=0;i<5;i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:puff,color:col,transparent:true,depthWrite:false,fog:false,opacity:.8}));
       sp.scale.set(r*rnd(2.6,3.6),r*rnd(1.1,1.6),1);sp.position.set(cl.position.x+rnd(-r,r)*1.2,cl.position.y+rnd(-r,r)*.25,cl.position.z+rnd(-r,r)*1.2);dome.add(sp)}}
   const sun=scene.children.find(o=>o.isDirectionalLight&&o.castShadow);
+  // per-pixel sky in place of the vertex-coloured dome: smooth gradient, horizon fading into the map's haze, glow round the sun
+  if(OPEN&&dome.isMesh&&dome.material&&dome.material.vertexColors&&dome.geometry.attributes.color){const ca=dome.geometry.attributes.color,P=dome.geometry.attributes.position,R=P.getY(0)||170;
+    const pick3=yy=>{let best=0,bd=9;for(let i=0;i<P.count;i++){const d=Math.abs(P.getY(i)/R-yy);if(d<bd){bd=d;best=i}}return new THREE.Color(ca.getX(best),ca.getY(best),ca.getZ(best))};
+    const night=scene.fog&&(scene.fog.color.r*.3+scene.fog.color.g*.59+scene.fog.color.b*.11)<.3,sd=sun?sun.position.clone().sub(sun.target.position).normalize():new THREE.Vector3(0,1,0);
+    dome.material=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:pick3(.95)},mid:{value:pick3(.3)},hor:{value:pick3(0)},haze:{value:(scene.fog?scene.fog.color:pick3(0)).clone()},sunD:{value:sd},sunC:{value:(sun?sun.color:new THREE.Color(1,1,1)).clone()},night:{value:night?1:0}},
+      vertexShader:'varying vec3 vD;void main(){vD=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+      fragmentShader:`uniform vec3 top,mid,hor,haze,sunD,sunC;uniform float night;varying vec3 vD;
+      void main(){vec3 d=normalize(vD);float y=d.y;vec3 c=y>.2?mix(mid,top,clamp((y-.2)/.6,0.,1.)):mix(hor,mid,clamp(y/.2,0.,1.));
+        c=mix(c,haze,(1.-smoothstep(-.02,.22,y))*.7);float mu=max(dot(d,sunD),0.);
+        c+=sunC*(1.-night)*(pow(mu,8.)*.18+pow(mu,64.)*.35)*(1.-.5*smoothstep(.0,.6,y));
+        c=mix(c,vec3(1.,.98,.92)*1.4,(1.-night)*smoothstep(.9996,.99985,mu));
+        gl_FragColor=vec4(c,1.);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }`})}
   if(sun){const d=sun.position.clone().sub(sun.target.position).normalize();
     const glow=canvasTex(128,128,g=>{const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,250,235,1)');gr.addColorStop(.08,'rgba(255,244,214,.9)');gr.addColorStop(.3,'rgba(255,220,160,.25)');gr.addColorStop(1,'rgba(255,210,150,0)');g.fillStyle=gr;g.fillRect(0,0,128,128)},true);
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glow,color:sun.color,transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending,opacity:.55}));sp.scale.set(30,30,1);sp.position.copy(d.multiplyScalar(160));dome.add(sp)}}
@@ -1756,6 +1771,29 @@ function crowdMeshes(pts,cx,cz){const n=pts.length/3;if(!n)return[];
   for(let i=0;i<n;i++){const x=pts[i*3],y=pts[i*3+1],z=pts[i*3+2];d.position.set(x,y,z);d.rotation.set(rnd(-.08,.05),Math.atan2(cx-x,cz-z)+rnd(-.35,.35),0);d.scale.setScalar(rnd(.92,1.08));d.updateMatrix();
     B.setMatrixAt(i,d.matrix);H.setMatrixAt(i,d.matrix);B.setColorAt(i,c.setHex(pick(cloth)));H.setColorAt(i,c.setHex(pick(skin)))}
   for(const m of[B,H]){m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;m.receiveShadow=true;m.castShadow=false}return[B,H]}
+// ================= REAL MOUNTAINS (Ultra / Cinematic): a continuous ring of eroded terrain round the map =================
+// Ridged fractal noise on a polar grid, rising away from the map; colours from the map's own palette, darker in gullies, lighter on
+// ridges, snow above the snow line on flat-enough slopes (frost), terraced cliffs for mesas (refinery). One mesh, ~6k vertices.
+function rngNoise(seed){const p=new Uint8Array(512);for(let i=0;i<256;i++)p[i]=i;let s=seed|0||1;const r=()=>(s=(s*16807)%2147483647)/2147483647;for(let i=255;i>0;i--){const j=Math.floor(r()*(i+1));[p[i],p[j]]=[p[j],p[i]]}for(let i=0;i<256;i++)p[i+256]=p[i];
+  const g=(h,x,y)=>((h&1)?x:-x)+((h&2)?y:-y),f=t=>t*t*t*(t*(t*6-15)+10);
+  return(x,y)=>{const X=Math.floor(x)&255,Y=Math.floor(y)&255;x-=Math.floor(x);y-=Math.floor(y);const u=f(x),v=f(y),a=p[X]+Y,b=p[X+1]+Y;
+    return((1-v)*((1-u)*g(p[a],x,y)+u*g(p[b],x-1,y))+v*((1-u)*g(p[a+1],x,y-1)+u*g(p[b+1],x-1,y-1)))*.7+.5}}
+function realRange(grp,S,cols,o){o=Object.assign({r0:115,depth:80,H:42,snow:0,mesa:0,seed:7},o||{});const N=rngNoise(o.seed),AS=360,RS=40,pos=[],col=[],idx=[],c=new THREE.Color(),cs=cols.map(h=>new THREE.Color(h));
+  const cx=W/2,cz=D/2,hgt=(a,t)=>{const x=Math.cos(a),q=Math.sin(a),R=3.2;let h=0,amp=1,fr=1;for(let k=0;k<5;k++){const nv=N(x*R*fr+t*1.6*fr+k*31,q*R*fr+t*1.2*fr-k*17),rg=1-Math.abs(nv*2-1);h+=(rg*rg*.65+nv*.35)*amp;amp*=k<1?.55:.42;fr*=2.1}
+    h=h/1.6*(.55+.45*N(a*3+5,t+9));const env=Math.min(1,t/.38)**1.5*(1-.25*Math.max(0,t-.75)/.25);let y=h*env*o.H;
+    if(o.mesa){const st=o.H*.16,f=y/st,fl=Math.floor(f);y=(fl+Math.min(1,Math.max(0,(f-fl-.72)/.28)))*st}return y};
+  for(let j=0;j<=RS;j++){const t=j/RS;for(let i=0;i<=AS;i++){const a=i/AS*Math.PI*2,r=o.r0-8+t*o.depth,y=hgt(a,t);pos.push(cx+Math.cos(a)*r,S-1.5+y,cz+Math.sin(a)*r)}}
+  for(let j=0;j<RS;j++)for(let i=0;i<AS;i++){const a=j*(AS+1)+i,b=a+AS+1;idx.push(a,a+1,b,b,a+1,b+1)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();const nm=g.attributes.normal,P=g.attributes.position;
+  for(let v=0;v<P.count;v++){const y=P.getY(v)-S,ny=nm.getY(v),x=P.getX(v),z=P.getZ(v),n=N(x*.05+3,z*.05-7),m=N(x*.012,z*.012);
+    const ci=q=>cs[Math.max(0,Math.min(cs.length-1,Math.floor(q*cs.length)))];c.copy(ci(m)).lerp(ci(n),.5);
+    c.multiplyScalar(.72+.5*Math.min(1,y/o.H)+(ny-.75)*.4);                                        // ridges catch light, gullies stay dark
+    if(ny<.55)c.lerp(new THREE.Color(cols[0]).multiplyScalar(.55),.5*(.55-ny)/.55);                   // bare cliff faces
+    if(o.snow){const sl=o.H*(.36+.12*n),k=Math.min(1,Math.max(0,(y-sl)/4))*Math.min(1,Math.max(0,(ny-.45)/.2));c.lerp(new THREE.Color(0xe9eef3),k)}
+    col.push(c.r,c.g,c.b)}
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  const mt=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.95,metalness:0});mt.userData.noDust=1;
+  const me=new THREE.Mesh(g,mt);me.userData.noMerge=1;grp.add(me);return me}
 // ================= REAL VEHICLES (Ultra / Cinematic): moulded bodies instead of stacked boxes =================
 // A side profile (wheel arches cut in, sloped glass, rounded nose and tail) extruded across the car with rounded edges, clear-coated
 // paint, real glass, tyres on alloy rims, lights, grille, bumpers, mirrors, door seams. Length runs along +x (front), ground at y=0.
@@ -3081,7 +3119,8 @@ function buildFrost(){
   scene.add(new THREE.HemisphereLight(0xdde8ff,0x8a96a4,.45));
   for(const l of scene.children){if(l.isAmbientLight)l.intensity=.32;else if(l.isHemisphereLight&&l.intensity===.3)l.intensity=.15}
   // ---- distant mountains & forest
-  for(let i=0;i<14;i++){const a=i/14*Math.PI*2+rnd(-.1,.1),r=rnd(130,160),h=rnd(30,60),rad=rnd(35,60);
+  if(REALISM)realRange(grp,S,[0x6a7486,0x7a8496,0x5e6878],{r0:125,H:58,snow:1,seed:3});
+  else for(let i=0;i<14;i++){const a=i/14*Math.PI*2+rnd(-.1,.1),r=rnd(130,160),h=rnd(30,60),rad=rnd(35,60);
     const m=new THREE.Mesh(new THREE.ConeGeometry(rad,h,SG(6)),LP(pick([0x6a7486,0x7a8496,0x5e6878])));m.position.set(W/2+Math.cos(a)*r,S+h/2-2,D/2+Math.sin(a)*r);grp.add(m);
     const cap=new THREE.Mesh(new THREE.ConeGeometry(rad*.42,h*.42,SG(6)),LP(SNOW));cap.position.set(m.position.x,S+h-2-h*.21+.5,m.position.z);grp.add(cap)}
   for(let i=0;i<120;i++){let x,z;do{x=rnd(-55,W+55);z=rnd(-45,D+45)}while(x>-2&&x<W+2&&z>-2&&z<D+2);pine(x,z,rnd(1.1,2),false)}
@@ -3348,7 +3387,8 @@ manor(K){const{S,LP,glow,mark,hset,box,fb,wall,cyl,win,building,crate,barrel,lam
     for(let i=0;i<len;i++){const px=alongX?x0+i+.5:x0+.5,pz=alongX?z0+.5:z0+i+.5;if(i%6===0){fb(px,S+1.2,pz,.6,2.4,.6,STONE);fb(px,S+2.5,pz,.75,.2,.75,STONE2)}else for(const o of[-.25,.25])fb(px+(alongX?o:0),S+1.1,pz+(alongX?0:o),.05,2.2,.05,IRON)}
     fb((x0+x1+1)/2,S+2,(z0+z1+1)/2,alongX?len:.06,.06,alongX?.06:len,IRON);fb((x0+x1+1)/2,S+.3,(z0+z1+1)/2,alongX?len:.06,.06,alongX?.06:len,IRON)}
   // distant hills and dead forest
-  for(let i=0;i<12;i++){const a=i/12*Math.PI*2,r=rnd(120,150),h=rnd(14,30),rad=rnd(40,60);const m=new THREE.Mesh(new THREE.SphereGeometry(rad,SG(8),SG(5),0,Math.PI*2,0,Math.PI/2),LP(pick([0x161c16,0x1a2018])));m.scale.y=h/rad;m.position.set(W/2+Math.cos(a)*r,S-1,D/2+Math.sin(a)*r);K.grp.add(m)}
+  if(REALISM)realRange(K.grp,S,[0x161c16,0x1a2018,0x22281e],{r0:118,H:24,seed:11});
+  else for(let i=0;i<12;i++){const a=i/12*Math.PI*2,r=rnd(120,150),h=rnd(14,30),rad=rnd(40,60);const m=new THREE.Mesh(new THREE.SphereGeometry(rad,SG(8),SG(5),0,Math.PI*2,0,Math.PI/2),LP(pick([0x161c16,0x1a2018])));m.scale.y=h/rad;m.position.set(W/2+Math.cos(a)*r,S-1,D/2+Math.sin(a)*r);K.grp.add(m)}
   const deadTree=(x,z,s=1,solid=true)=>{if(solid)mark(Math.floor(x),Math.floor(z),Math.floor(x),Math.floor(z),T.TREE);const tr=cyl(x,z,.12*s,3.2*s,barkMat(0x2e2620),0,6,.22*s);
     for(let i=0;i<4;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.07*s,1.4*s,SG(5)),barkMat(0x2e2620));const a=i*1.7+rnd(0,.6);b.position.set(x+Math.cos(a)*.45*s,S+(2.2+i*.3)*s,z+Math.sin(a)*.45*s);b.rotation.set(Math.sin(a)*.9,0,-Math.cos(a)*.9);K.grp.add(b)}};
   for(let i=0;i<90;i++){let x,z;do{x=rnd(-50,W+50);z=rnd(-40,D+40)}while(x>-2&&x<W+2&&z>-2&&z<D+2);deadTree(x,z,rnd(1.2,2),false)}
@@ -3409,7 +3449,8 @@ refinery(K){const{S,LP,glow,mark,hset,box,fb,wall,cyl,win,building,crate,barrel,
     fb((x0+x1+1)/2,S+1.3,(z0+z1+1)/2,alongX?len:.03,2.5,alongX?.03:len,mesh);for(const y of[2.8,2.95])fb((x0+x1+1)/2,S+y,(z0+z1+1)/2,alongX?len:.03,.03,alongX?.03:len,DARK)}
   // desert beyond: dunes, mesas, pumpjacks
   for(let i=0;i<40;i++){let x,z;do{x=rnd(-80,W+80);z=rnd(-70,D+70)}while(x>-6&&x<W+6&&z>-6&&z<D+6);const d=new THREE.Mesh(new THREE.SphereGeometry(rnd(6,14),SG(8),SG(4),0,Math.PI*2,0,Math.PI/2),LP(pick([0xd8b47a,0xcca86e,0xe0bc84])));d.scale.y=rnd(.15,.3);d.position.set(x,S-.2,z);K.grp.add(d)}
-  for(let i=0;i<9;i++){const a=i/9*Math.PI*2+rnd(-.2,.2),r=rnd(125,155),h=rnd(18,34),w=rnd(20,40);const m=new THREE.Mesh(new THREE.CylinderGeometry(w*.8,w,h,SG(7)),LP(pick([0xa8603a,0xb8704a,0x9a5a34])));m.position.set(W/2+Math.cos(a)*r,S+h/2-1,D/2+Math.sin(a)*r);K.grp.add(m);
+  if(REALISM)realRange(K.grp,S,[0xa8603a,0xb8704a,0x9a5a34],{r0:122,H:36,mesa:1,seed:5});
+  else for(let i=0;i<9;i++){const a=i/9*Math.PI*2+rnd(-.2,.2),r=rnd(125,155),h=rnd(18,34),w=rnd(20,40);const m=new THREE.Mesh(new THREE.CylinderGeometry(w*.8,w,h,SG(7)),LP(pick([0xa8603a,0xb8704a,0x9a5a34])));m.position.set(W/2+Math.cos(a)*r,S+h/2-1,D/2+Math.sin(a)*r);K.grp.add(m);
     const cap=new THREE.Mesh(new THREE.CylinderGeometry(w*.82,w*.8,1.5,SG(7)),LP(0x8a4a2a));cap.position.set(m.position.x,S+h-.5,m.position.z);K.grp.add(cap)}
   const pumpjack=(x,z,s=1,ry=0)=>{const o=new THREE.Group();o.position.set(x,S,z);o.rotation.y=ry;o.scale.setScalar(s);K.grp.add(o);fb(0,.15,0,1.2,.3,4,DARK,o);fb(0,1.4,.3,.25,2.5,.25,RUST,o);fb(0,1.4,-.3,.25,2.5,.25,RUST,o);
     const beam=fb(0,2.7,0,.3,.35,4.4,YEL,o);beam.rotation.x=.12;const head=fb(0,2.4,2.3,.4,1.2,.5,YEL,o);head.rotation.x=.12;fb(0,.9,-1.6,.8,.9,.8,DARK,o)};
@@ -3658,7 +3699,7 @@ const TOWN={
   tree(K,x,z,s=1,solid=true){const{S,mark,cyl}=K;if(solid)mark(x,z,x,z,T.TREE);cyl(x+.5,z+.5,.16*s,2.4*s,barkMat(0x5a4030),0,7,.24*s);
     for(let i=0;i<3;i++){const b=new THREE.Mesh(new THREE.IcosahedronGeometry((1.3-i*.25)*s,SMOOTH()?1:0),K.LP(pick([0x3a7a2a,0x4a8a32,0x2e6a26])));b.position.set(x+.5+rnd(-.4,.4)*s,S+(2.6+i*.7)*s,z+.5+rnd(-.4,.4)*s);b.scale.y=.75;K.grp.add(b);leafReg(b,1)}},
   sign(K,x,z,ry,w,h,y,draw){const t=canvasTex(256,Math.round(256*h/w),draw,true);const m=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}));m.scale.set(w,h,1);m.rotation.y=ry;m.position.set(x,K.S+y,z);K.grp.add(m);return m},
-  mountains(K,cols,n=12,r0=120){for(let i=0;i<n;i++){const a=i/n*Math.PI*2+rnd(-.2,.2),r=rnd(r0,r0+30),h=rnd(18,40),rad=rnd(30,55);const m=new THREE.Mesh(new THREE.ConeGeometry(rad,h,SG(7)),K.LP(pick(cols)));m.position.set(W/2+Math.cos(a)*r,K.S+h/2-2,D/2+Math.sin(a)*r);K.grp.add(m)}},
+  mountains(K,cols,n=12,r0=120){if(REALISM){realRange(K.grp,K.S,cols,{r0:r0+5,H:38,seed:n*7+r0});return}for(let i=0;i<n;i++){const a=i/n*Math.PI*2+rnd(-.2,.2),r=rnd(r0,r0+30),h=rnd(18,40),rad=rnd(30,55);const m=new THREE.Mesh(new THREE.ConeGeometry(rad,h,SG(7)),K.LP(pick(cols)));m.position.set(W/2+Math.cos(a)*r,K.S+h/2-2,D/2+Math.sin(a)*r);K.grp.add(m)}},
   perimeter(K,t,h,c){const{mark,box}=K;for(let x=0;x<W;x++){mark(x,0,x,0,t);mark(x,D-1,x,D-1,t)}for(let z=0;z<D;z++){mark(0,z,0,z,t);mark(W-1,z,W-1,z,t)}
     if(h){box(0,0,W-1,0,0,h,c);box(0,D-1,W-1,D-1,0,h,c);box(0,1,0,D-2,0,h,c);box(W-1,1,W-1,D-2,0,h,c)}}};
 Object.assign(GEN,{
@@ -4049,7 +4090,7 @@ downtown(K){const{S,LP,glow,mark,hset,box,fb,cyl,lamp,crate,barrel,solidDisc,Z}=
 // ================= ONLINE HUB CLIENT: parties, invites, matchmaking, private matches =================
 // The hub address is filled in when the game is published (Publish Update.bat). It can be overridden in localStorage 'hotd_hub'.
 const CLOUD_HUB=/*HUB*/'https://hotd-hub.onrender.com';
-const GAME_VERSION=/*VER*/'2026.10.20.1722';
+const GAME_VERSION=/*VER*/'2026.10.20.1834';
 const HUB={ws:null,uid:(()=>{try{return localStorage.getItem('hotd_uid')}catch(e){return null}})(),friend:null,party:null,online:[],n:0,mm:'idle',mmMode:'tdm',tries:0,invite:null,priv:{map:'nuketown',mode:'tdm',bots:10}};
 if(!HUB.uid){HUB.uid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('hotd_uid',HUB.uid)}catch(e){}}
 function hubBase(){let h='';try{h=localStorage.getItem('hotd_hub')||''}catch(e){}h=(h||CLOUD_HUB||'').trim().replace(/\/+$/,'');return h}
@@ -5818,7 +5859,9 @@ function decorateHalloween(){if(!SPOOKY())return;const root=new THREE.Group();sc
     const cols=[0xff8a20,0xa040ff];const lightMats=cols.map(c=>new THREE.MeshBasicMaterial({color:c}));const pts=[];
     for(let x=1;x<W-1;x+=1.5){pts.push([x,.8],[x,D-1.2])}for(let z=1;z<D-1;z+=1.5){pts.push([.8,z],[W-1.2,z])}
     pts.forEach(([x,z],i)=>{const b=new THREE.Mesh(new THREE.SphereGeometry(.07,SG(4),SG(3)),lightMats[i%2]);b.position.set(x,S+(MAP==='skyline'?3.1:2.6)+Math.sin(i*.9)*.08,z);floorGroups[0].add(b)});
-    if(skyDome){const moon=new THREE.Mesh(new THREE.CircleGeometry(7,SG(10)),new THREE.MeshBasicMaterial({color:0xfff2c8,fog:false}));moon.position.set(90,70,-100);moon.lookAt(0,0,0);skyDome.add(moon)}}
+    if(skyDome){const moon=new THREE.Mesh(new THREE.CircleGeometry(7,SG(10)),new THREE.MeshBasicMaterial({color:0xfff2c8,fog:false}));moon.position.set(90,70,-100);moon.lookAt(0,0,0);skyDome.add(moon);
+      // in daylight the moon is a pale ghost in the blue, not a second sun
+      if(REALISM&&scene.fog&&(scene.fog.color.r*.3+scene.fog.color.g*.59+scene.fog.color.b*.11)>=.3){moon.material.color.setHex(0xe8eef4);moon.material.transparent=true;moon.material.opacity=.28;moon.material.depthWrite=false}}}
   const batMat=lam(0x141018);
   for(let i=0;i<(OPEN?28:0);i++){const b=new THREE.Group();const body=new THREE.Mesh(new THREE.SphereGeometry(.12,SG(4),SG(3)),batMat);b.add(body);
     const wg=new THREE.PlaneGeometry(.45,.2);const L=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0x1a1420,side:THREE.DoubleSide}));L.position.x=-.25;const Rw=L.clone();Rw.position.x=.25;b.add(L,Rw);
